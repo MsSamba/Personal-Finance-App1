@@ -22,37 +22,10 @@ const getInitialState = () => {
 }
 
 const getDefaultState = () => ({
-  transactions: [
-    {
-      id: "1",
-      amount: -25.5,
-      description: "Coffee Shop",
-      category: "Food & Dining",
-      date: "2024-01-15",
-      type: "expense",
-    },
-    {
-      id: "2",
-      amount: 2500.0,
-      description: "Salary",
-      category: "Income",
-      date: "2024-01-01",
-      type: "income",
-    },
-  ],
-  budgets: [
-    { id: "1", category: "Food & Dining", limit: 500, spent: 145.5, color: "bg-blue-500" },
-    { id: "2", category: "Transportation", limit: 200, spent: 45.0, color: "bg-green-500" },
-  ],
-  pots: [
-    { id: "1", name: "Emergency Fund", target: 5000, saved: 2500, color: "bg-red-500" },
-    { id: "2", name: "Vacation", target: 2000, saved: 750, color: "bg-yellow-500" },
-  ],
-  recurringBills: [
-    { id: "1", name: "Netflix", amount: 15.99, dueDate: "2024-02-01", frequency: "monthly", paid: true },
-    { id: "2", name: "Electricity", amount: 120.0, dueDate: "2024-02-05", frequency: "monthly", paid: false },
-  ],
-  balance: 4500.0,
+  transactions: [],
+  budgets: [],
+  pots: [],
+  recurringBills: [],
 })
 
 const saveToLocalStorage = (state) => {
@@ -65,6 +38,10 @@ const saveToLocalStorage = (state) => {
   }
 }
 
+const calculateBalance = (transactions) => {
+  return transactions.reduce((total, transaction) => total + transaction.amount, 0)
+}
+
 function financeReducer(state, action) {
   let newState
 
@@ -73,13 +50,40 @@ function financeReducer(state, action) {
       newState = {
         ...state,
         transactions: [action.payload, ...state.transactions],
-        balance: state.balance + action.payload.amount,
+      }
+      break
+    case "UPDATE_TRANSACTION":
+      newState = {
+        ...state,
+        transactions: state.transactions.map((transaction) =>
+          transaction.id === action.payload.id ? { ...transaction, ...action.payload.updates } : transaction,
+        ),
+      }
+      break
+    case "DELETE_TRANSACTION":
+      newState = {
+        ...state,
+        transactions: state.transactions.filter((transaction) => transaction.id !== action.payload),
       }
       break
     case "ADD_BUDGET":
       newState = {
         ...state,
         budgets: [...state.budgets, action.payload],
+      }
+      break
+    case "UPDATE_BUDGET":
+      newState = {
+        ...state,
+        budgets: state.budgets.map((budget) =>
+          budget.id === action.payload.id ? { ...budget, ...action.payload.updates } : budget,
+        ),
+      }
+      break
+    case "DELETE_BUDGET":
+      newState = {
+        ...state,
+        budgets: state.budgets.filter((budget) => budget.id !== action.payload),
       }
       break
     case "ADD_POT":
@@ -94,10 +98,30 @@ function financeReducer(state, action) {
         pots: state.pots.map((pot) => (pot.id === action.payload.id ? { ...pot, ...action.payload.updates } : pot)),
       }
       break
+    case "DELETE_POT":
+      newState = {
+        ...state,
+        pots: state.pots.filter((pot) => pot.id !== action.payload),
+      }
+      break
     case "ADD_RECURRING_BILL":
       newState = {
         ...state,
         recurringBills: [...state.recurringBills, action.payload],
+      }
+      break
+    case "UPDATE_RECURRING_BILL":
+      newState = {
+        ...state,
+        recurringBills: state.recurringBills.map((bill) =>
+          bill.id === action.payload.id ? { ...bill, ...action.payload.updates } : bill,
+        ),
+      }
+      break
+    case "DELETE_RECURRING_BILL":
+      newState = {
+        ...state,
+        recurringBills: state.recurringBills.filter((bill) => bill.id !== action.payload),
       }
       break
     case "TOGGLE_BILL_PAID":
@@ -107,6 +131,21 @@ function financeReducer(state, action) {
           bill.id === action.payload ? { ...bill, paid: !bill.paid } : bill,
         ),
       }
+      break
+    case "MARK_ALL_BILLS_PAID":
+      newState = {
+        ...state,
+        recurringBills: state.recurringBills.map((bill) => ({ ...bill, paid: true })),
+      }
+      break
+    case "RESET_ALL_BILLS":
+      newState = {
+        ...state,
+        recurringBills: state.recurringBills.map((bill) => ({ ...bill, paid: false })),
+      }
+      break
+    case "CLEAR_ALL_DATA":
+      newState = getDefaultState()
       break
     default:
       return state
@@ -121,7 +160,11 @@ const FinanceContext = createContext()
 export function FinanceProvider({ children }) {
   const [state, dispatch] = useReducer(financeReducer, getInitialState())
 
-  return <FinanceContext.Provider value={{ state, dispatch }}>{children}</FinanceContext.Provider>
+  const balance = calculateBalance(state.transactions)
+
+  return (
+    <FinanceContext.Provider value={{ state: { ...state, balance }, dispatch }}>{children}</FinanceContext.Provider>
+  )
 }
 
 export function useFinance() {

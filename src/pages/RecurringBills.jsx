@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useFinance } from "../context/FinanceContext"
+import { EmptyState } from "../components/EmptyState"
 
 export function RecurringBills() {
   const { state, dispatch } = useFinance()
@@ -125,7 +126,7 @@ export function RecurringBills() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <h3 className="text-sm font-medium text-gray-600">Total Monthly Bills</h3>
-          <p className="text-2xl font-bold text-gray-900 mt-2">${totalMonthlyBills.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">KES {totalMonthlyBills.toFixed(2)}</p>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <h3 className="text-sm font-medium text-gray-600">Paid This Month</h3>
@@ -209,66 +210,78 @@ export function RecurringBills() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">All Bills</h3>
-          <button
-            onClick={resetAllBills}
-            disabled={isResetting}
-            className="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors disabled:opacity-50"
-          >
-            {isResetting ? "Resetting..." : "Reset All"}
-          </button>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {state.recurringBills.map((bill) => (
-            <div key={bill.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => togglePaid(bill.id)}
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    bill.paid ? "bg-green-500 border-green-500 text-white" : "border-gray-300 hover:border-green-500"
-                  }`}
-                >
-                  {bill.paid && "✓"}
-                </button>
-                <div>
-                  <p className={`font-medium ${bill.paid ? "text-gray-500 line-through" : "text-gray-900"}`}>
-                    {bill.name}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Due: {bill.dueDate} • {bill.frequency}
-                  </p>
+      {state.recurringBills.length > 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">All Bills</h3>
+            <button
+              onClick={resetAllBills}
+              disabled={isResetting}
+              className="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              {isResetting ? "Resetting..." : "Reset All"}
+            </button>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {state.recurringBills.map((bill) => (
+              <div key={bill.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => togglePaid(bill.id)}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      bill.paid ? "bg-green-500 border-green-500 text-white" : "border-gray-300 hover:border-green-500"
+                    }`}
+                  >
+                    {bill.paid && "✓"}
+                  </button>
+                  <div>
+                    <p className={`font-medium ${bill.paid ? "text-gray-500 line-through" : "text-gray-900"}`}>
+                      {bill.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Due: {bill.dueDate} • {bill.frequency}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className={`font-semibold ${bill.paid ? "text-gray-500" : "text-gray-900"}`}>
+                      KES {bill.amount.toFixed(2)}
+                    </p>
+                    <p className={`text-xs ${bill.paid ? "text-green-600" : "text-red-600"}`}>
+                      {bill.paid ? "Paid" : "Pending"}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEdit(bill)}
+                      className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(bill.id)}
+                      className="text-red-600 hover:text-red-800 font-medium text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className={`font-semibold ${bill.paid ? "text-gray-500" : "text-gray-900"}`}>
-                    ${bill.amount.toFixed(2)}
-                  </p>
-                  <p className={`text-xs ${bill.paid ? "text-green-600" : "text-red-600"}`}>
-                    {bill.paid ? "Paid" : "Pending"}
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(bill)}
-                    className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(bill.id)}
-                    className="text-red-600 hover:text-red-800 font-medium text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border">
+          <EmptyState
+            icon="🔄"
+            title="No Recurring Bills Set Up"
+            description="Stay on top of your monthly expenses by adding your recurring bills. Never miss a payment and keep track of your regular commitments."
+            actionText="Add Your First Bill"
+            onAction={() => setShowForm(true)}
+          />
+        </div>
+      )}
     </div>
   )
 }

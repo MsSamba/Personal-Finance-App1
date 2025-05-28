@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useFinance } from "../context/FinanceContext"
+import { EmptyState } from "../components/EmptyState"
 
 const colorOptions = [
   "bg-red-500",
@@ -184,107 +185,122 @@ export function Pots() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {state.pots.map((pot) => {
-          const percentage = (pot.saved / pot.target) * 100
-          const remaining = pot.target - pot.saved
+      {state.pots.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {state.pots.map((pot) => {
+            const percentage = (pot.saved / pot.target) * 100
+            const remaining = pot.target - pot.saved
 
-          return (
-            <div key={pot.id} className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{pot.name}</h3>
-                <div className={`w-4 h-4 rounded-full ${pot.color}`} />
-              </div>
-
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">${pot.saved.toFixed(2)}</p>
-                  <p className="text-sm text-gray-500">of ${pot.target.toFixed(2)} target</p>
+            return (
+              <div key={pot.id} className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{pot.name}</h3>
+                  <div className={`w-4 h-4 rounded-full ${pot.color}`} />
                 </div>
 
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className={`h-3 rounded-full ${pot.color}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
-                </div>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">KES {pot.saved.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">of KES {pot.target.toFixed(2)} target</p>
+                  </div>
 
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">{percentage.toFixed(1)}% saved</span>
-                  <span className="text-gray-600">${remaining.toFixed(2)} to go</span>
-                </div>
-
-                {showAddMoney === pot.id ? (
-                  <div className="space-y-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className={`h-3 rounded-full ${pot.color}`}
+                      style={{ width: `${Math.min(percentage, 100)}%` }}
                     />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCustomAmount(pot.id)}
-                        className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors"
-                      >
-                        Add
-                      </button>
-                      <button
-                        onClick={() => setShowAddMoney(null)}
-                        className="flex-1 bg-gray-300 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-400 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAddMoney(pot.id, 50)}
-                        className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
-                      >
-                        Add $50
-                      </button>
-                      <button
-                        onClick={() => handleAddMoney(pot.id, 100)}
-                        className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors"
-                      >
-                        Add $100
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setShowAddMoney(pot.id)}
-                      className="w-full bg-purple-600 text-white py-2 px-3 rounded-md text-sm hover:bg-purple-700 transition-colors"
-                    >
-                      Custom Amount
-                    </button>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleWithdrawMoney(pot.id, 50)}
-                        className="flex-1 bg-orange-600 text-white py-2 px-3 rounded-md text-sm hover:bg-orange-700 transition-colors"
-                      >
-                        Withdraw $50
-                      </button>
-                      <button
-                        onClick={() => handleEdit(pot)}
-                        className="flex-1 bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(pot.id)}
-                      className="w-full bg-red-600 text-white py-2 px-3 rounded-md text-sm hover:bg-red-700 transition-colors"
-                    >
-                      Delete Pot
-                    </button>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">{percentage.toFixed(1)}% saved</span>
+                    <span className="text-gray-600">KES {remaining.toFixed(2)} to go</span>
                   </div>
-                )}
+
+                  {showAddMoney === pot.id ? (
+                    <div className="space-y-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(e.target.value)}
+                        placeholder="Enter amount"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleCustomAmount(pot.id)}
+                          className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors"
+                        >
+                          Add
+                        </button>
+                        <button
+                          onClick={() => setShowAddMoney(null)}
+                          className="flex-1 bg-gray-300 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-400 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAddMoney(pot.id, 50)}
+                          className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                        >
+                          Add KES 500
+                        </button>
+                        <button
+                          onClick={() => handleAddMoney(pot.id, 100)}
+                          className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors"
+                        >
+                          Add KES 1000
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setShowAddMoney(pot.id)}
+                        className="w-full bg-purple-600 text-white py-2 px-3 rounded-md text-sm hover:bg-purple-700 transition-colors"
+                      >
+                        Custom Amount
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleWithdrawMoney(pot.id, 50)}
+                          className="flex-1 bg-orange-600 text-white py-2 px-3 rounded-md text-sm hover:bg-orange-700 transition-colors"
+                        >
+                          Withdraw KES 500
+                        </button>
+                        <button
+                          onClick={() => handleEdit(pot)}
+                          className="flex-1 bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(pot.id)}
+                        className="w-full bg-red-600 text-white py-2 px-3 rounded-md text-sm hover:bg-red-700 transition-colors"
+                      >
+                        Delete Pot
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border">
+          <EmptyState
+            icon="🏺"
+            title="No Savings Goals Yet"
+            description="Start building your financial future by creating savings goals. Whether it's an emergency fund, vacation, or dream purchase - every goal starts with the first dollar saved."
+            actionText="Create Your First Savings Goal"
+            onAction={() => setShowForm(true)}
+          />
+        </div>
+      )}
     </div>
   )
 }
