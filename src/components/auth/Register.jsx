@@ -91,7 +91,7 @@ export function Register({ onToggleMode }) {
               <p className="text-sm italic">
                 "FinanceFlow helped me save $10,000 in my first year. The budgeting tools are game-changers!"
               </p>
-              <p className="text-xs mt-2 text-yellow-300">- Sarah M., Happy User</p>
+              <p className="text-xs mt-2 text-green-500">- Imora J., Happy User</p>
             </div>
           </div>
         </div>

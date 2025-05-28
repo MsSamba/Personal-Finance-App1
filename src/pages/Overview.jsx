@@ -119,7 +119,7 @@ export function Overview() {
                 </div>
                 <div className="text-right">
                   <p className={`font-semibold ${transaction.amount > 0 ? "text-green-600" : "text-red-600"}`}>
-                    {transaction.amount > 0 ? "+" : ""}${Math.abs(transaction.amount).toFixed(2)}
+                    {transaction.amount > 0 ? "+" : ""}KES {Math.abs(transaction.amount).toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-500">{transaction.date}</p>
                 </div>
