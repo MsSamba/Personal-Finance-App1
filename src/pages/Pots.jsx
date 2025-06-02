@@ -245,13 +245,13 @@ export function Pots() {
                     <div className="space-y-2">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleAddMoney(pot.id, 50)}
+                          onClick={() => handleAddMoney(pot.id, 500)}
                           className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
                         >
                           Add KES 500
                         </button>
                         <button
-                          onClick={() => handleAddMoney(pot.id, 100)}
+                          onClick={() => handleAddMoney(pot.id, 1000)}
                           className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors"
                         >
                           Add KES 1000
@@ -265,7 +265,7 @@ export function Pots() {
                       </button>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleWithdrawMoney(pot.id, 50)}
+                          onClick={() => handleWithdrawMoney(pot.id, 500)}
                           className="flex-1 bg-orange-600 text-white py-2 px-3 rounded-md text-sm hover:bg-orange-700 transition-colors"
                         >
                           Withdraw KES 500
