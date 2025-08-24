@@ -2,53 +2,61 @@
 
 import { useState } from "react"
 import { useAuth } from "../../context/AuthContext"
+import { Link } from "react-router-dom"
 
 export function Register({ onToggleMode }) {
   const [formData, setFormData] = useState({
-    name: "",
+    first_name: "",
+    last_name: "",
+    username: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    password_confirm: "",
   })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const { register } = useAuth()
+  const [acceptTerms, setAcceptTerms] = useState(false)
+
+  const { register, loading, error, clearError } = useAuth()
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+
+    // Clear error when user starts typing
+    if (error) {
+      clearError()
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError("Please fill in all fields")
+    // Validate required fields
+    const requiredFields = ["first_name", "last_name", "username", "email", "password", "password_confirm"]
+    const missingFields = requiredFields.filter((field) => !formData[field])
+
+    if (missingFields.length > 0) {
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long")
+    if (formData.password !== formData.password_confirm) {
       return
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
+    if (!acceptTerms) {
       return
     }
 
     try {
-      setError("")
-      setLoading(true)
-      await register(formData.email, formData.password, formData.name)
+      await register(formData)
+      // Navigation will be handled by the App component based on auth state
     } catch (error) {
-      setError("Failed to create account. Please try again.")
-    } finally {
-      setLoading(false)
+      // Error is handled by the auth context
+      console.error("Registration failed:", error.message)
     }
   }
 
@@ -89,7 +97,7 @@ export function Register({ onToggleMode }) {
             </div>
             <div className="mt-8 p-4 bg-white bg-opacity-10 rounded-lg backdrop-blur-sm">
               <p className="text-sm italic">
-                "FinanceFlow helped me save $10,000 in my first year. The budgeting tools are game-changers!"
+                "FinanceFlow helped me save KES 500,000 in my first year. The budgeting tools are game-changers!"
               </p>
               <p className="text-xs mt-2 text-green-500">- Imora J., Happy User</p>
             </div>
@@ -132,25 +140,72 @@ export function Register({ onToggleMode }) {
             )}
 
             <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    First Name
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="first_name"
+                      name="first_name"
+                      type="text"
+                      required
+                      value={formData.first_name}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12"
+                      placeholder="John"
+                      disabled={loading}
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-lg">👤</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Last Name
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="last_name"
+                      name="last_name"
+                      type="text"
+                      required
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12"
+                      placeholder="Doe"
+                      disabled={loading}
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-lg">👤</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
                 </label>
                 <div className="relative">
                   <input
-                    id="name"
-                    name="name"
+                    id="username"
+                    name="username"
                     type="text"
                     required
-                    value={formData.name}
+                    value={formData.username}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12"
-                    placeholder="Enter your full name"
+                    placeholder="Choose a unique username"
+                    disabled={loading}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-lg">👤</span>
+                    <span className="text-gray-400 text-lg">@</span>
                   </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Letters, numbers, and underscores only</p>
               </div>
 
               <div>
@@ -167,6 +222,7 @@ export function Register({ onToggleMode }) {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12"
                     placeholder="Enter your email"
+                    disabled={loading}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-400 text-lg">📧</span>
@@ -188,6 +244,7 @@ export function Register({ onToggleMode }) {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12 pr-12"
                     placeholder="Create a strong password"
+                    disabled={loading}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-400 text-lg">🔒</span>
@@ -196,27 +253,29 @@ export function Register({ onToggleMode }) {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
                     <span className="text-lg">{showPassword ? "🙈" : "👁️"}</span>
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
+                <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
                   <input
-                    id="confirmPassword"
-                    name="confirmPassword"
+                    id="password_confirm"
+                    name="password_confirm"
                     type={showConfirmPassword ? "text" : "password"}
                     required
-                    value={formData.confirmPassword}
+                    value={formData.password_confirm}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12 pr-12"
                     placeholder="Confirm your password"
+                    disabled={loading}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-400 text-lg">🔐</span>
@@ -225,17 +284,53 @@ export function Register({ onToggleMode }) {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
                     <span className="text-lg">{showConfirmPassword ? "🙈" : "👁️"}</span>
                   </button>
                 </div>
+                {formData.password && formData.password_confirm && formData.password !== formData.password_confirm && (
+                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                )}
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="accept-terms"
+                  name="accept-terms"
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                  required
+                />
+                <label htmlFor="accept-terms" className="ml-2 block text-sm text-gray-900">
+                  I agree to the{" "}
+                  <Link to="/terms" className="text-green-600 hover:text-green-500">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" className="text-green-600 hover:text-green-500">
+                    Privacy Policy
+                  </Link>
+                </label>
               </div>
             </div>
 
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={
+                  loading ||
+                  !formData.first_name ||
+                  !formData.last_name ||
+                  !formData.username ||
+                  !formData.email ||
+                  !formData.password ||
+                  !formData.password_confirm ||
+                  formData.password !== formData.password_confirm ||
+                  !acceptTerms
+                }
                 className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
               >
                 {loading ? (
@@ -254,6 +349,7 @@ export function Register({ onToggleMode }) {
                 type="button"
                 onClick={onToggleMode}
                 className="text-green-600 hover:text-green-500 text-sm font-medium transition-colors duration-200"
+                disabled={loading}
               >
                 Already have an account? <span className="underline decoration-2 underline-offset-2">Sign in here</span>
               </button>

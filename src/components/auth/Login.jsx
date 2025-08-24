@@ -2,31 +2,29 @@
 
 import { useState } from "react"
 import { useAuth } from "../../context/AuthContext"
+import { Link } from "react-router-dom"
+import { Mail, Lock, Eye, EyeOff } from "lucide-react"
 
 export function Login({ onToggleMode }) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
-  const { login } = useAuth()
+  const [rememberMe, setRememberMe] = useState(false)
+
+  const { login, loading, error, clearError } = useAuth()
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (error) clearError()
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (!email || !password) {
-      setError("Please fill in all fields")
-      return
-    }
-
+    if (!formData.email || !formData.password) return
     try {
-      setError("")
-      setLoading(true)
-      await login(email, password)
-    } catch (error) {
-      setError("Failed to log in. Please check your credentials.")
-    } finally {
-      setLoading(false)
+      await login(formData)
+    } catch (err) {
+      console.error("Login failed:", err.message)
     }
   }
 
@@ -45,31 +43,16 @@ export function Login({ onToggleMode }) {
               Your personal financial journey continues here. Track, manage, and grow your wealth with confidence.
             </p>
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center">
-                  <span className="text-green-900 font-bold">✓</span>
-                </div>
-                <span className="text-lg">Smart Budget Tracking</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <span className="text-yellow-900 font-bold">💰</span>
-                </div>
-                <span className="text-lg">Savings Goals Made Easy</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-pink-400 rounded-full flex items-center justify-center">
-                  <span className="text-pink-900 font-bold">📊</span>
-                </div>
-                <span className="text-lg">Expense Insights & Analytics</span>
-              </div>
+              <Feature icon="✓" bg="bg-green-400" text="Smart Budget Tracking" />
+              <Feature icon="💰" bg="bg-yellow-400" text="Savings Goals Made Easy" />
+              <Feature icon="📊" bg="bg-pink-400" text="Expense Insights & Analytics" />
             </div>
           </div>
         </div>
         {/* Decorative Elements */}
-        <div className="absolute top-20 right-20 w-32 h-32 bg-white bg-opacity-10 rounded-full"></div>
-        <div className="absolute bottom-20 right-32 w-20 h-20 bg-yellow-300 bg-opacity-20 rounded-full"></div>
-        <div className="absolute top-1/2 right-10 w-16 h-16 bg-pink-300 bg-opacity-15 rounded-full"></div>
+        <div className="absolute top-20 right-20 w-32 h-32 bg-white/10 rounded-full"></div>
+        <div className="absolute bottom-20 right-32 w-20 h-20 bg-yellow-300/20 rounded-full"></div>
+        <div className="absolute top-1/2 right-10 w-16 h-16 bg-pink-300/15 rounded-full"></div>
       </div>
 
       {/* Right Side - Login Form */}
@@ -88,93 +71,107 @@ export function Login({ onToggleMode }) {
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <span className="text-red-400">⚠️</span>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-center space-x-3">
+                <span className="text-red-500">⚠️</span>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
             <div className="space-y-5">
+              {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
                 </label>
-                <div className="relative">
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-4 text-gray-400 h-5 w-5" />
                   <input
                     id="email"
                     name="email"
                     type="email"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-12"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="Enter your email"
+                    disabled={loading}
                   />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-lg">📧</span>
-                  </div>
                 </div>
               </div>
 
+              {/* Password */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
-                <div className="relative">
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-4 text-gray-400 h-5 w-5" />
                   <input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-12 pr-12"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="Enter your password"
+                    disabled={loading}
                   />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-lg">🔒</span>
-                  </div>
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
-                    <span className="text-lg">{showPassword ? "🙈" : "👁️"}</span>
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
+
+              {/* Remember + Forgot Password */}
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-gray-700">Remember me</span>
+                </label>
+                <Link to="/forgot-password" className="text-blue-600 hover:text-blue-500 font-medium">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  "Sign In to Your Account"
-                )}
-              </button>
-            </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading || !formData.email || !formData.password}
+              className="w-full flex justify-center py-3 px-4 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+            >
+              {loading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Signing in...
+                </div>
+              ) : (
+                "Sign In to Your Account"
+              )}
+            </button>
 
             <div className="text-center">
               <button
                 type="button"
                 onClick={onToggleMode}
                 className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors duration-200"
+                disabled={loading}
               >
-                Don't have an account? <span className="underline decoration-2 underline-offset-2">Create one now</span>
+                Don&apos;t have an account?{" "}
+                <span className="underline decoration-2 underline-offset-2">Create one now</span>
               </button>
             </div>
           </form>
@@ -182,22 +179,33 @@ export function Login({ onToggleMode }) {
           {/* Trust Indicators */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-center space-x-6 text-xs text-gray-500">
-              <div className="flex items-center">
-                <span className="mr-1">🔐</span>
-                <span>Secure Login</span>
-              </div>
-              <div className="flex items-center">
-                <span className="mr-1">🛡️</span>
-                <span>Privacy Protected</span>
-              </div>
-              <div className="flex items-center">
-                <span className="mr-1">⚡</span>
-                <span>Lightning Fast</span>
-              </div>
+              <Indicator icon="🔐" text="Secure Login" />
+              <Indicator icon="🛡️" text="Privacy Protected" />
+              <Indicator icon="⚡" text="Lightning Fast" />
             </div>
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function Feature({ icon, bg, text }) {
+  return (
+    <div className="flex items-center space-x-3">
+      <div className={`w-8 h-8 ${bg} rounded-full flex items-center justify-center`}>
+        <span className="font-bold">{icon}</span>
+      </div>
+      <span className="text-lg">{text}</span>
+    </div>
+  )
+}
+
+function Indicator({ icon, text }) {
+  return (
+    <div className="flex items-center">
+      <span className="mr-1">{icon}</span>
+      <span>{text}</span>
     </div>
   )
 }
