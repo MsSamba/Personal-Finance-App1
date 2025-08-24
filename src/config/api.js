@@ -1,4 +1,3 @@
-// api.js
 import axios from "axios"
 
 // ✅ Use Vite env vars instead of process.env
@@ -86,6 +85,24 @@ export const authAPI = {
   // Email
   verifyEmail: (token) => api.post("/auth/email/verify/", { token }),
   resendVerification: () => api.post("/auth/email/resend/"),
+}
+
+// Transaction API endpoints
+export const transactionAPI = {
+  // Transaction CRUD
+  getTransactions: (params = {}) => api.get("/transactions/transactions/", { params }),
+  getTransaction: (id) => api.get(`/transactions/transactions/${id}/`),
+  createTransaction: (transactionData) => api.post("/transactions/transactions/", transactionData),
+  updateTransaction: (id, transactionData) => api.patch(`/transactions/transactions/${id}/`, transactionData),
+  deleteTransaction: (id) => api.delete(`/transactions/transactions/${id}/`),
+
+  // Transaction analytics
+  getTransactionSummary: (params = {}) => api.get("/transactions/transactions/summary/", { params }),
+  getRecentTransactions: (limit = 10) => api.get("/transactions/transactions/recent/", { params: { limit } }),
+
+  // Categories
+  getCategories: (params = {}) => api.get("/transactions/categories/", { params }),
+  createDefaultCategories: () => api.post("/transactions/categories/create_defaults/"),
 }
 
 export default api

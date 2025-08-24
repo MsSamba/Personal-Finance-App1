@@ -1,170 +1,352 @@
 "use client"
 
-import { createContext, useContext, useReducer } from "react"
+import { createContext, useContext, useReducer, useEffect, useCallback } from "react"
+import { transactionAPI } from "../config/api"
+import { useAuth } from "./AuthContext"
 
-const STORAGE_KEY = "personal-finance-app-data"
+const FinanceContext = createContext()
 
-const getInitialState = () => {
-  if (typeof window === "undefined") {
-    return getDefaultState()
-  }
-
-  try {
-    const savedData = localStorage.getItem(STORAGE_KEY)
-    if (savedData) {
-      return JSON.parse(savedData)
-    }
-  } catch (error) {
-    console.error("Error loading data from localStorage:", error)
-  }
-
-  return getDefaultState()
-}
-
-const getDefaultState = () => ({
+const initialState = {
   transactions: [],
+  categories: [],
   budgets: [],
   pots: [],
   recurringBills: [],
-})
 
-const saveToLocalStorage = (state) => {
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch (error) {
-      console.error("Error saving data to localStorage:", error)
-    }
-  }
-}
+  // Loading states
+  transactionsLoading: false,
+  categoriesLoading: false,
 
-const calculateBalance = (transactions) => {
-  return transactions.reduce((total, transaction) => total + transaction.amount, 0)
+  // Summary data
+  transactionSummary: {
+    total_income: 0,
+    total_expenses: 0,
+    net_amount: 0,
+    transaction_count: 0,
+    income_count: 0,
+    expense_count: 0,
+  },
+
+  // Error states
+  error: null,
 }
 
 function financeReducer(state, action) {
-  let newState
-
   switch (action.type) {
+    // Loading states
+    case "SET_TRANSACTIONS_LOADING":
+      return { ...state, transactionsLoading: action.payload }
+    case "SET_CATEGORIES_LOADING":
+      return { ...state, categoriesLoading: action.payload }
+    case "SET_ERROR":
+      return { ...state, error: action.payload }
+    case "CLEAR_ERROR":
+      return { ...state, error: null }
+
+    // Transactions
+    case "SET_TRANSACTIONS":
+      return { ...state, transactions: action.payload }
     case "ADD_TRANSACTION":
-      newState = {
+      return {
         ...state,
         transactions: [action.payload, ...state.transactions],
       }
-      break
     case "UPDATE_TRANSACTION":
-      newState = {
+      return {
         ...state,
         transactions: state.transactions.map((transaction) =>
-          transaction.id === action.payload.id ? { ...transaction, ...action.payload.updates } : transaction,
+          transaction.id === action.payload.id ? action.payload : transaction,
         ),
       }
-      break
     case "DELETE_TRANSACTION":
-      newState = {
+      return {
         ...state,
         transactions: state.transactions.filter((transaction) => transaction.id !== action.payload),
       }
-      break
+
+    // Categories
+    case "SET_CATEGORIES":
+      return { ...state, categories: action.payload }
+
+    // Summary
+    case "SET_TRANSACTION_SUMMARY":
+      return { ...state, transactionSummary: action.payload }
+
+    // Legacy localStorage actions (for budgets, pots, recurring bills)
     case "ADD_BUDGET":
-      newState = {
-        ...state,
-        budgets: [...state.budgets, action.payload],
-      }
-      break
+      return { ...state, budgets: [...state.budgets, action.payload] }
     case "UPDATE_BUDGET":
-      newState = {
+      return {
         ...state,
         budgets: state.budgets.map((budget) =>
           budget.id === action.payload.id ? { ...budget, ...action.payload.updates } : budget,
         ),
       }
-      break
     case "DELETE_BUDGET":
-      newState = {
-        ...state,
-        budgets: state.budgets.filter((budget) => budget.id !== action.payload),
-      }
-      break
+      return { ...state, budgets: state.budgets.filter((budget) => budget.id !== action.payload) }
     case "ADD_POT":
-      newState = {
-        ...state,
-        pots: [...state.pots, action.payload],
-      }
-      break
+      return { ...state, pots: [...state.pots, action.payload] }
     case "UPDATE_POT":
-      newState = {
+      return {
         ...state,
         pots: state.pots.map((pot) => (pot.id === action.payload.id ? { ...pot, ...action.payload.updates } : pot)),
       }
-      break
     case "DELETE_POT":
-      newState = {
-        ...state,
-        pots: state.pots.filter((pot) => pot.id !== action.payload),
-      }
-      break
+      return { ...state, pots: state.pots.filter((pot) => pot.id !== action.payload) }
     case "ADD_RECURRING_BILL":
-      newState = {
-        ...state,
-        recurringBills: [...state.recurringBills, action.payload],
-      }
-      break
+      return { ...state, recurringBills: [...state.recurringBills, action.payload] }
     case "UPDATE_RECURRING_BILL":
-      newState = {
+      return {
         ...state,
         recurringBills: state.recurringBills.map((bill) =>
           bill.id === action.payload.id ? { ...bill, ...action.payload.updates } : bill,
         ),
       }
-      break
     case "DELETE_RECURRING_BILL":
-      newState = {
+      return {
         ...state,
         recurringBills: state.recurringBills.filter((bill) => bill.id !== action.payload),
       }
-      break
     case "TOGGLE_BILL_PAID":
-      newState = {
+      return {
         ...state,
         recurringBills: state.recurringBills.map((bill) =>
           bill.id === action.payload ? { ...bill, paid: !bill.paid } : bill,
         ),
       }
-      break
     case "MARK_ALL_BILLS_PAID":
-      newState = {
+      return {
         ...state,
         recurringBills: state.recurringBills.map((bill) => ({ ...bill, paid: true })),
       }
-      break
     case "RESET_ALL_BILLS":
-      newState = {
+      return {
         ...state,
         recurringBills: state.recurringBills.map((bill) => ({ ...bill, paid: false })),
       }
-      break
     case "CLEAR_ALL_DATA":
-      newState = getDefaultState()
-      break
+      return initialState
+    case "LOAD_LEGACY_DATA":
+      return { ...state, ...action.payload }
+
     default:
       return state
   }
-
-  saveToLocalStorage(newState)
-  return newState
 }
 
-const FinanceContext = createContext()
-
 export function FinanceProvider({ children }) {
-  const [state, dispatch] = useReducer(financeReducer, getInitialState())
+  const [state, dispatch] = useReducer(financeReducer, initialState)
+  const { currentUser } = useAuth()
 
-  const balance = calculateBalance(state.transactions)
+  // Load legacy data from localStorage for budgets, pots, and recurring bills
+  useEffect(() => {
+    if (currentUser) {
+      try {
+        const savedData = localStorage.getItem("personal-finance-app-data")
+        if (savedData) {
+          const parsedData = JSON.parse(savedData)
+          dispatch({
+            type: "LOAD_LEGACY_DATA",
+            payload: {
+              budgets: parsedData.budgets || [],
+              pots: parsedData.pots || [],
+              recurringBills: parsedData.recurringBills || [],
+            },
+          })
+        }
+      } catch (error) {
+        console.error("Error loading legacy data:", error)
+      }
+    }
+  }, [currentUser])
 
-  return (
-    <FinanceContext.Provider value={{ state: { ...state, balance }, dispatch }}>{children}</FinanceContext.Provider>
+  // Save legacy data to localStorage
+  const saveLegacyData = useCallback(() => {
+    try {
+      const dataToSave = {
+        budgets: state.budgets,
+        pots: state.pots,
+        recurringBills: state.recurringBills,
+      }
+      localStorage.setItem("personal-finance-app-data", JSON.stringify(dataToSave))
+    } catch (error) {
+      console.error("Error saving legacy data:", error)
+    }
+  }, [state.budgets, state.pots, state.recurringBills])
+
+  // Save legacy data whenever it changes
+  useEffect(() => {
+    if (currentUser) {
+      saveLegacyData()
+    }
+  }, [currentUser, saveLegacyData])
+
+  // API Functions for Transactions
+  const fetchTransactions = useCallback(
+    async (params = {}) => {
+      if (!currentUser) return
+
+      try {
+        dispatch({ type: "SET_TRANSACTIONS_LOADING", payload: true })
+        dispatch({ type: "CLEAR_ERROR" })
+
+        const response = await transactionAPI.getTransactions(params)
+        dispatch({ type: "SET_TRANSACTIONS", payload: response.data.results || response.data })
+      } catch (error) {
+        console.error("Error fetching transactions:", error)
+        dispatch({ type: "SET_ERROR", payload: "Failed to load transactions" })
+      } finally {
+        dispatch({ type: "SET_TRANSACTIONS_LOADING", payload: false })
+      }
+    },
+    [currentUser],
   )
+
+  const createTransaction = useCallback(async (transactionData) => {
+    try {
+      dispatch({ type: "CLEAR_ERROR" })
+      const response = await transactionAPI.createTransaction(transactionData)
+      dispatch({ type: "ADD_TRANSACTION", payload: response.data })
+
+      // Refresh summary
+      fetchTransactionSummary()
+
+      return response.data
+    } catch (error) {
+      console.error("Error creating transaction:", error)
+      const errorMessage = error.response?.data?.detail || "Failed to create transaction"
+      dispatch({ type: "SET_ERROR", payload: errorMessage })
+      throw error
+    }
+  }, [])
+
+  const updateTransaction = useCallback(async (id, transactionData) => {
+    try {
+      dispatch({ type: "CLEAR_ERROR" })
+      const response = await transactionAPI.updateTransaction(id, transactionData)
+      dispatch({ type: "UPDATE_TRANSACTION", payload: response.data })
+
+      // Refresh summary
+      fetchTransactionSummary()
+
+      return response.data
+    } catch (error) {
+      console.error("Error updating transaction:", error)
+      const errorMessage = error.response?.data?.detail || "Failed to update transaction"
+      dispatch({ type: "SET_ERROR", payload: errorMessage })
+      throw error
+    }
+  }, [])
+
+  const deleteTransaction = useCallback(async (id) => {
+    try {
+      dispatch({ type: "CLEAR_ERROR" })
+      await transactionAPI.deleteTransaction(id)
+      dispatch({ type: "DELETE_TRANSACTION", payload: id })
+
+      // Refresh summary
+      fetchTransactionSummary()
+    } catch (error) {
+      console.error("Error deleting transaction:", error)
+      const errorMessage = error.response?.data?.detail || "Failed to delete transaction"
+      dispatch({ type: "SET_ERROR", payload: errorMessage })
+      throw error
+    }
+  }, [])
+
+  // API Functions for Categories
+  const fetchCategories = useCallback(
+    async (params = {}) => {
+      if (!currentUser) return
+
+      try {
+        dispatch({ type: "SET_CATEGORIES_LOADING", payload: true })
+        dispatch({ type: "CLEAR_ERROR" })
+
+        const response = await transactionAPI.getCategories(params)
+        dispatch({ type: "SET_CATEGORIES", payload: response.data.results || response.data })
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+        dispatch({ type: "SET_ERROR", payload: "Failed to load categories" })
+      } finally {
+        dispatch({ type: "SET_CATEGORIES_LOADING", payload: false })
+      }
+    },
+    [currentUser],
+  )
+
+  const createDefaultCategories = useCallback(async () => {
+    try {
+      dispatch({ type: "CLEAR_ERROR" })
+      const response = await transactionAPI.createDefaultCategories()
+
+      // Refresh categories
+      fetchCategories()
+
+      return response.data
+    } catch (error) {
+      console.error("Error creating default categories:", error)
+      const errorMessage = error.response?.data?.detail || "Failed to create default categories"
+      dispatch({ type: "SET_ERROR", payload: errorMessage })
+      throw error
+    }
+  }, [fetchCategories])
+
+  // Summary functions
+  const fetchTransactionSummary = useCallback(
+    async (params = {}) => {
+      if (!currentUser) return
+
+      try {
+        const response = await transactionAPI.getTransactionSummary(params)
+        dispatch({ type: "SET_TRANSACTION_SUMMARY", payload: response.data })
+      } catch (error) {
+        console.error("Error fetching transaction summary:", error)
+      }
+    },
+    [currentUser],
+  )
+
+  // Initialize data when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      fetchTransactions()
+      fetchCategories()
+      fetchTransactionSummary()
+    }
+  }, [currentUser, fetchTransactions, fetchCategories, fetchTransactionSummary])
+
+  // Calculate balance from transactions
+  const balance = state.transactions.reduce((total, transaction) => {
+    return total + Number.parseFloat(transaction.signed_amount || 0)
+  }, 0)
+
+  const value = {
+    // State
+    ...state,
+    balance,
+
+    // Transaction functions
+    fetchTransactions,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+
+    // Category functions
+    fetchCategories,
+    createDefaultCategories,
+
+    // Summary functions
+    fetchTransactionSummary,
+
+    // Legacy dispatch for budgets, pots, recurring bills
+    dispatch,
+
+    // Utility functions
+    clearError: () => dispatch({ type: "CLEAR_ERROR" }),
+  }
+
+  return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>
 }
 
 export function useFinance() {
