@@ -2,6 +2,8 @@ import axios from "axios"
 
 // ✅ Use Vite env vars instead of process.env
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
+console.log("🔗 API Base URL:", API_BASE_URL)
+
 
 // Create axios instance
 const api = axios.create({
@@ -100,9 +102,73 @@ export const transactionAPI = {
   getTransactionSummary: (params = {}) => api.get("/transactions/transactions/summary/", { params }),
   getRecentTransactions: (limit = 10) => api.get("/transactions/transactions/recent/", { params: { limit } }),
 
-  // Categories
-  getCategories: (params = {}) => api.get("/transactions/categories/", { params }),
-  createDefaultCategories: () => api.post("/transactions/categories/create_defaults/"),
+  // // Categories
+  // getCategories: (params = {}) => api.get("/transactions/categories/", { params }),
+  // createDefaultCategories: () => api.post("/transactions/categories/create_defaults/"),
 }
 
+// Budget API endpoints
+export const budgetAPI = {
+  // Budget CRUD
+  getBudgets: (params = {}) => api.get("/budgets/budgets/", { params }),
+  getBudget: (id) => api.get(`/budgets/budgets/${id}/`),
+  createBudget: (budgetData) => api.post("/budgets/budgets/", budgetData),
+  updateBudget: (id, budgetData) => api.patch(`/budgets/budgets/${id}/`, budgetData),
+  deleteBudget: (id) => api.delete(`/budgets/budgets/${id}/`),
+
+  // Budget actions
+  resetBudgetSpent: (id) => api.post(`/budgets/budgets/${id}/reset_spent/`),
+  checkAlerts: () => api.post("/budgets/budgets/check_alerts/"),
+
+  // Budget analytics
+  getBudgetAnalytics: (params = {}) => api.get("/budgets/budgets/analytics/", { params }),
+  getBudgetSummary: (params = {}) => api.get("/budgets/budgets/summary/", { params }),
+
+  // Budget history and alerts
+  getBudgetHistory: (params = {}) => api.get("/budgets/budget-history/", { params }),
+  getBudgetAlerts: (params = {}) => api.get("/budgets/budget-alerts/", { params }),
+  markAlertAsRead: (id) => api.post(`/budgets/budget-alerts/${id}/mark_as_read/`),
+
+  // Budget templates
+  getBudgetTemplates: (params = {}) => api.get("/budgets/budget-templates/", { params }),
+  createBudgetTemplate: (templateData) => api.post("/budgets/budget-templates/", templateData),
+  applyBudgetTemplate: (id) => api.post(`/budgets/budget-templates/${id}/apply_template/`),
+}
+
+// Savings API endpoints
+export const savingsAPI = {
+  // Savings Account
+  getSavingsAccount: () => api.get("/savings/account/my_account/"),
+  updateSavingsAccount: (accountData) => api.patch("/savings/account/", accountData),
+  allocateToGoal: (allocationData) => api.post("/savings/account/allocate_to_goal/", allocationData),
+  getSavingsTransactions: (params = {}) => api.get("/savings/account/transactions/", { params }),
+
+  // Savings Goals CRUD
+  getSavingsGoals: (params = {}) => api.get("/savings/goals/", { params }),
+  getSavingsGoal: (id) => api.get(`/savings/savings/goals/${id}/`),
+  createSavingsGoal: (goalData) => api.post("/savings/savings/goals/", goalData),
+  updateSavingsGoal: (id, goalData) => api.patch(`/savings/goals/${id}/`, goalData),
+  deleteSavingsGoal: (id) => api.delete(`/savings/goals/${id}/`),
+
+  // Savings Goal Actions
+  addFundsToGoal: (id, fundData) => api.post(`/savings/goals/${id}/add_funds/`, fundData),
+  withdrawFromGoal: (id, withdrawData) => api.post(`/savings/goals/${id}/withdraw_funds/`, withdrawData),
+  getGoalAllocations: (id, params = {}) => api.get(`/savings/goals/${id}/allocations/`, { params }),
+
+  // Savings Analytics
+  getSavingsAnalytics: (params = {}) => api.get("/savings/goals/analytics/", { params }),
+  getSavingsSummary: (params = {}) => api.get("/savings/goals/summary/", { params }),
+
+  // Savings Templates
+  getSavingsTemplates: (params = {}) => api.get("/savings/templates/", { params }),
+  applySavingsTemplate: (id, templateData) => api.post(`/savings/templates/${id}/apply_template/`, templateData),
+
+  // Savings Settings
+  getSavingsSettings: () => api.get("/savings/settings/my_settings/"),
+  updateSavingsSettings: (settingsData) => api.patch("/savings/settings/update_settings/", settingsData),
+
+  // Savings Reports
+  getSavingsReports: (params = {}) => api.get("/savings/reports/", { params }),
+  generateSavingsReport: (reportData) => api.post("/savings/reports/generate_report/", reportData),
+}
 export default api

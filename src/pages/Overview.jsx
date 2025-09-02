@@ -3,12 +3,29 @@ import { EmptyState } from "../components/EmptyState"
 import { formatCurrency } from "../utils/currency"
 
 export function Overview() {
-  const { transactions, transactionSummary, transactionsLoading, balance } = useFinance()
+  const {
+    transactions,
+    transactionSummary,
+    transactionsLoading,
+    balance,
+    savingsAccount,
+    savingsGoals,
+  } = useFinance()
 
-  const recentTransactions = transactions.slice(0, 5)
+
+console.log("Transactions:", transactions)
+console.log("Summary:", transactionSummary)
+console.log("Balance:", balance)
+
+
+  // const recentTransactions = transactions.slice(0, 5)
+
+  const recentTransactions = Array.isArray(transactions)
+  ? transactions.slice(0, 5)
+  : [];
 
   // Show welcome message if no data exists
-  if (transactions.length === 0 && !transactionsLoading) {
+  if ((!Array.isArray(transactions) || transactions.length === 0) && !transactionsLoading) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">Welcome to FinanceFlow!</h1>
@@ -84,26 +101,45 @@ export function Overview() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Overview</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Current Balance */}
         <div className="bg-gray-900 text-white p-6 rounded-xl">
           <h3 className="text-sm font-medium text-gray-300">Current Balance</h3>
-          <p className="text-3xl font-bold mt-2">{formatCurrency(balance)}</p>
-          <p className="text-xs text-gray-400 mt-1">Calculated from {transactions.length} transactions</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-600">Total Income</h3>
-          <p className="text-2xl font-bold text-green-600 mt-2">{formatCurrency(transactionSummary.total_income)}</p>
-          <p className="text-xs text-gray-500 mt-1">From {transactionSummary.income_count} income transactions</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-600">Total Expenses</h3>
-          <p className="text-2xl font-bold text-red-600 mt-2">{formatCurrency(transactionSummary.total_expenses)}</p>
-          <p className="text-xs text-gray-500 mt-1">From {transactionSummary.expense_count} expense transactions</p>
-        </div>
+          <p className="text-2xl font-bold mt-2">
+          {formatCurrency(balance ?? 0)}
+       </p>
+       <p className="text-xs text-gray-400 mt-1">
+         Calculated from {transactions?.length || 0} transactions
+      </p>
       </div>
 
+        {/* Total Income */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <h3 className="text-sm font-medium text-gray-600">Total Income</h3>
+          <p className="text-2xl font-bold text-green-600 mt-2">{formatCurrency(transactionSummary?.total_income || 0)}</p>
+          <p className="text-xs text-gray-500 mt-1">From {transactionSummary?.income_count || 0} income transactions</p>
+        </div>
+
+        {/* Total Expenses */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <h3 className="text-sm font-medium text-gray-600">Total Expenses</h3>
+          <p className="text-2xl font-bold text-red-600 mt-2">{formatCurrency(transactionSummary?.total_expenses || 0)}</p>
+          <p className="text-xs text-gray-500 mt-1">From {transactionSummary?.expense_count || 0} expense transactions</p>
+        </div>
+
+        {/* Savings Account */}
+        {savingsAccount && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h3 className="text-sm font-medium text-gray-600">Savings Balance</h3>
+            <p className="text-2xl font-bold text-purple-600 mt-2">
+              {formatCurrency(savingsAccount.balance || 0)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">{savingsGoals.length} active goals</p>
+          </div>
+        )}
+      </div>
+
+      {/* Recent Transactions */}
       {recentTransactions.length > 0 ? (
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <div className="flex justify-between items-center mb-4">
@@ -150,3 +186,4 @@ export function Overview() {
     </div>
   )
 }
+

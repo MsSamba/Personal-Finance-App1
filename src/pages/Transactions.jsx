@@ -3,22 +3,17 @@
 import { useState, useEffect } from "react"
 import { useFinance } from "../context/FinanceContext"
 import { EmptyState } from "../components/EmptyState"
-import { getCategoriesByType, getDefaultCategory, CATEGORY_ICONS } from "../utils/categories"
 import { formatCurrencyWithSign, CURRENCY_SYMBOL } from "../utils/currency"
 
 export function Transactions() {
   const {
     transactions,
-    categories,
     transactionsLoading,
-    categoriesLoading,
     error,
     fetchTransactions,
-    fetchCategories,
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    createDefaultCategories,
     clearError,
   } = useFinance()
 
@@ -27,28 +22,20 @@ export function Transactions() {
   const [formData, setFormData] = useState({
     amount: "",
     description: "",
-    category: "",
     type: "expense",
   })
   const [formLoading, setFormLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Initialize categories if empty
   useEffect(() => {
-    if (categories.length === 0 && !categoriesLoading) {
-      createDefaultCategories().catch(() => {
-        // If creating defaults fails, just fetch existing categories
-        fetchCategories()
-      })
+    if (searchTerm.trim()) {
+      const timeoutId = setTimeout(() => {
+        fetchTransactions({ search: searchTerm })
+      }, 300)
+      return () => clearTimeout(timeoutId)
+    } else {
+      fetchTransactions()
     }
-  }, [categories.length, categoriesLoading, createDefaultCategories, fetchCategories])
-
-  // Apply search filter
-  useEffect(() => {
-    const params = {}
-    if (searchTerm) params.search = searchTerm
-
-    fetchTransactions(params)
   }, [searchTerm, fetchTransactions])
 
   const handleSubmit = async (e) => {
@@ -59,7 +46,6 @@ export function Transactions() {
       const transactionData = {
         amount: Number.parseFloat(formData.amount),
         description: formData.description,
-        category: formData.category,
         type: formData.type,
         date: new Date().toISOString().split("T")[0],
       }
@@ -71,12 +57,7 @@ export function Transactions() {
         await createTransaction(transactionData)
       }
 
-      setFormData({
-        amount: "",
-        description: "",
-        category: "",
-        type: "expense",
-      })
+      setFormData({ amount: "", description: "", type: "expense" })
       setShowForm(false)
     } catch (error) {
       console.error("Transaction operation failed:", error)
@@ -90,7 +71,6 @@ export function Transactions() {
     setFormData({
       amount: Math.abs(Number.parseFloat(transaction.amount)).toString(),
       description: transaction.description,
-      category: transaction.category,
       type: transaction.type,
     })
     setShowForm(true)
@@ -109,31 +89,8 @@ export function Transactions() {
   const handleCancel = () => {
     setShowForm(false)
     setEditingTransaction(null)
-    setFormData({
-      amount: "",
-      description: "",
-      category: "",
-      type: "expense",
-    })
+    setFormData({ amount: "", description: "", type: "expense" })
     clearError()
-  }
-
-  const handleTypeChange = (newType) => {
-    const defaultCategory = getDefaultCategory(newType, categories)
-    setFormData({
-      ...formData,
-      type: newType,
-      category: defaultCategory,
-    })
-  }
-
-  // Get categories filtered by transaction type
-  const availableCategories = getCategoriesByType(formData.type, categories)
-
-  // Get category icon for display
-  const getCategoryIcon = (categoryName) => {
-    const category = categories.find((cat) => cat.name === categoryName)
-    return category?.icon || CATEGORY_ICONS[categoryName] || "💰"
   }
 
   if (transactionsLoading && transactions.length === 0) {
@@ -155,17 +112,10 @@ export function Transactions() {
         <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
         <button
           onClick={() => {
-            const defaultCategory = getDefaultCategory("expense", categories)
-            setFormData({
-              amount: "",
-              description: "",
-              category: defaultCategory,
-              type: "expense",
-            })
+            setFormData({ amount: "", description: "", type: "expense" })
             setShowForm(true)
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors"
-          disabled={categories.length === 0}
         >
           <span className="mr-2">+</span>
           Add Transaction
@@ -189,9 +139,7 @@ export function Transactions() {
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
           <div className="flex">
-            <div className="flex-shrink-0">
-              <span className="text-red-400">⚠️</span>
-            </div>
+            <div className="flex-shrink-0">⚠️</div>
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
               <button onClick={clearError} className="mt-2 text-sm text-red-600 hover:text-red-800 underline">
@@ -212,7 +160,7 @@ export function Transactions() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
               <select
                 value={formData.type}
-                onChange={(e) => handleTypeChange(e.target.value)}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={formLoading}
               >
@@ -250,40 +198,10 @@ export function Transactions() {
                 disabled={formLoading}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              {formData.type === "income" ? (
-                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
-                  💰 Income
-                </div>
-              ) : (
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  required
-                  disabled={formLoading}
-                >
-                  <option value="" disabled>
-                    Select a category
-                  </option>
-                  {availableCategories.map((category) => (
-                    <option key={category.id} value={category.name}>
-                      {category.icon} {category.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.type === "income"
-                  ? "Income transactions use the Income category"
-                  : "Choose an expense category"}
-              </p>
-            </div>
             <div className="md:col-span-2 flex gap-2">
               <button
                 type="submit"
-                disabled={formLoading || !formData.category}
+                disabled={formLoading}
                 className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {formLoading ? (
@@ -320,9 +238,6 @@ export function Transactions() {
                     Description
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -338,12 +253,6 @@ export function Transactions() {
                   <tr key={transaction.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {transaction.description}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center space-x-2">
-                        <span>{getCategoryIcon(transaction.category)}</span>
-                        <span>{transaction.category}</span>
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(transaction.date).toLocaleDateString()}
@@ -389,19 +298,11 @@ export function Transactions() {
           <EmptyState
             icon="💳"
             title="No Transactions Yet"
-            description="Start your financial journey by adding your first transaction. Choose from our predefined categories to keep your finances organized."
+            description="Start your financial journey by adding your first transaction."
             actionText="Add Your First Transaction"
             onAction={() => {
-              if (categories.length > 0) {
-                const defaultCategory = getDefaultCategory("expense", categories)
-                setFormData({
-                  amount: "",
-                  description: "",
-                  category: defaultCategory,
-                  type: "expense",
-                })
-                setShowForm(true)
-              }
+              setFormData({ amount: "", description: "", type: "expense" })
+              setShowForm(true)
             }}
           />
         </div>
