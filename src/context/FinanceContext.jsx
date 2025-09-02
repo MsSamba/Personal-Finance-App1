@@ -10,6 +10,7 @@ import { transactionAPI, budgetAPI, savingsAPI } from "../config/api"
 const initialState = {
   transactions: [],
   budgets: [],
+  categories: [],
   pots: [],
   recurringBills: [],
   
@@ -62,6 +63,10 @@ function financeReducer(state, action) {
       return { ...state, budgets: Array.isArray(action.payload) ? action.payload : [] }
     case "ADD_BUDGET":
       return { ...state, budgets: [action.payload, ...(state.budgets || [])] }
+
+    case "SET_CATEGORIES":
+      return { ...state, categories: Array.isArray(action.payload) ? action.payload : [] }
+  
     case "UPDATE_BUDGET":
       return {
         ...state,
@@ -244,11 +249,25 @@ export function FinanceProvider({ children }) {
     if (!currentUser) return
     try {
       const res = await budgetAPI.getBudgets()
-      dispatch({ type: "SET_BUDGETS", payload: res.data })
+      const data = res.data.results || res.data 
+      dispatch({ type: "SET_BUDGETS", payload: data })
     } catch (error) {
       console.error("Error fetching budgets:", error)
+      dispatch({ type: "SET_BUDGETS", payload: []})
     }
   }, [currentUser])
+
+  const fetchCategories = useCallback(async () => {
+  if (!currentUser) return
+  try {
+    const res = await budgetAPI.getCategories()
+    dispatch({ type: "SET_CATEGORIES", payload: res.data.results || res.data })
+  } catch (error) {
+    console.error("Error fetching categories:", error)
+    dispatch({ type: "SET_CATEGORIES", payload: [] })
+  }
+}, [currentUser])
+
 
   const createBudget = useCallback(async (budgetData) => {
     try {
@@ -364,6 +383,7 @@ export function FinanceProvider({ children }) {
     if (currentUser) {
       fetchTransactionsWithLoading()
       fetchBudgets()
+      fetchCategories()
       fetchSavingsAccount()
       fetchSavingsGoals()
       fetchSavingsAnalytics()
@@ -399,6 +419,7 @@ export function FinanceProvider({ children }) {
 
         // Budgets
         fetchBudgets,
+        fetchCategories,
         createBudget,
         updateBudget,
         deleteBudget,

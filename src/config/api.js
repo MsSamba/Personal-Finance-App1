@@ -102,9 +102,7 @@ export const transactionAPI = {
   getTransactionSummary: (params = {}) => api.get("/transactions/transactions/summary/", { params }),
   getRecentTransactions: (limit = 10) => api.get("/transactions/transactions/recent/", { params: { limit } }),
 
-  // // Categories
-  // getCategories: (params = {}) => api.get("/transactions/categories/", { params }),
-  // createDefaultCategories: () => api.post("/transactions/categories/create_defaults/"),
+  
 }
 
 // Budget API endpoints
@@ -115,6 +113,11 @@ export const budgetAPI = {
   createBudget: (budgetData) => api.post("/budgets/budgets/", budgetData),
   updateBudget: (id, budgetData) => api.patch(`/budgets/budgets/${id}/`, budgetData),
   deleteBudget: (id) => api.delete(`/budgets/budgets/${id}/`),
+
+
+  // Categories
+  getCategories: (params = {}) => api.get("/budgets/categories/", { params }),
+  createDefaultCategories: () => api.post("/budgets/categories/create_defaults/"),
 
   // Budget actions
   resetBudgetSpent: (id) => api.post(`/budgets/budgets/${id}/reset_spent/`),
