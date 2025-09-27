@@ -10,20 +10,22 @@ import { transactionAPI, budgetAPI, savingsAPI } from "../config/api"
 const initialState = {
   transactions: [],
   budgets: [],
-  categories: [],
+  budgetCategories: [],
+  transactionCategories: [],
   pots: [],
   recurringBills: [],
-  
 
   // Savings
   savingsAccount: null,
   savingsGoals: [],
   savingsSettings: null,
   savingsTransactions: [],
+  savingsAnalytics: null,
 
   // Loading states
   loading: false,
   savingsLoading: false,
+  savingsAnalyticsLoading: false,
 
   // Error handling
   error: null,
@@ -47,6 +49,12 @@ function financeReducer(state, action) {
       return { ...state, transactions: Array.isArray(action.payload) ? action.payload : [] }
     case "ADD_TRANSACTION":
       return { ...state, transactions: [action.payload, ...(state.transactions || [])] }
+    case "SET_TRANSACTION_CATEGORIES":
+      return {
+        ...state,
+        transactionCategories: Array.isArray(action.payload) ? action.payload : [],
+        budgetCategories: Array.isArray(action.payload) ? action.payload : [],
+      }
     case "UPDATE_TRANSACTION":
       return {
         ...state,
@@ -63,10 +71,6 @@ function financeReducer(state, action) {
       return { ...state, budgets: Array.isArray(action.payload) ? action.payload : [] }
     case "ADD_BUDGET":
       return { ...state, budgets: [action.payload, ...(state.budgets || [])] }
-
-    case "SET_CATEGORIES":
-      return { ...state, categories: Array.isArray(action.payload) ? action.payload : [] }
-  
     case "UPDATE_BUDGET":
       return {
         ...state,
@@ -103,14 +107,14 @@ function financeReducer(state, action) {
         ...state,
         savingsGoals: (state.savingsGoals || []).filter((g) => g.id !== action.payload),
       }
-
     case "SET_SAVINGS_TRANSACTIONS":
       return { ...state, savingsTransactions: Array.isArray(action.payload) ? action.payload : [] }
-
     case "SET_SAVINGS_ANALYTICS":
       return { ...state, savingsAnalytics: action.payload }
     case "SET_SAVINGS_SETTINGS":
       return { ...state, savingsSettings: action.payload }
+    case "SET_SAVINGS_ANALYTICS_LOADING":
+      return { ...state, savingsAnalyticsLoading: action.payload }
 
     default:
       return state
@@ -126,6 +130,14 @@ export function FinanceProvider({ children }) {
   const [state, dispatch] = useReducer(financeReducer, initialState)
   const { currentUser } = useAuth()
   const [transactionsLoading, setTransactionsLoading] = useState(false)
+
+  // -----------------------------
+  // Derived State: Expense Categories
+  // -----------------------------
+  const expenseCategories = useMemo(() => {
+    if (!state.budgetCategories) return []
+    return state.budgetCategories.filter((c) => !c.is_income_category)
+  }, [state.budgetCategories])
 
   // -----------------------------
   // Transaction API Functions
@@ -176,6 +188,17 @@ export function FinanceProvider({ children }) {
     }
   }, [])
 
+  const fetchTransactionCategories = useCallback(async () => {
+    if (!currentUser) return
+    try {
+      const res = await transactionAPI.getCategories()
+      dispatch({ type: "SET_TRANSACTION_CATEGORIES", payload: res.data.results || res.data })
+    } catch (error) {
+      console.error("Error fetching transaction categories:", error)
+      dispatch({ type: "SET_TRANSACTION_CATEGORIES", payload: [] })
+    }
+  }, [currentUser])
+
   const updateTransaction = useCallback(async (id, txData) => {
     try {
       const res = await transactionAPI.updateTransaction(id, txData)
@@ -197,50 +220,20 @@ export function FinanceProvider({ children }) {
     }
   }, [])
 
-
-  // -------------------------------
+  // -----------------------------
   // Derived State: Transaction Summary
-  // ----------------------------------
-  // const transactionSummary = useMemo(() => {
-  //   if (!Array.isArray(state.transactions)) return {
-  //     total_income: 0,
-  //     total_expenses: 0,
-  //     income_count: 0,
-  //     expense_count: 0,
-  //   }
-
-    const incomeTxs = state.transactions.filter(tx => tx.type === "income")
-    const expenseTxs = state.transactions.filter(tx => tx.type === "expense")
-
-  //   const total_income = incomeTxs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
-  //   const total_expenses = expenseTxs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
-
-  //   return {
-  //     total_income,
-  //     total_expenses,
-  //     income_count: incomeTxs.length,
-  //     expense_count: expenseTxs.length,
-  //   }
-  // }, [state.transactions])
+  // -----------------------------
+  const incomeTxs = state.transactions.filter((tx) => tx.type === "income")
+  const expenseTxs = state.transactions.filter((tx) => tx.type === "expense")
 
   const transactionSummary = {
-  total_income: incomeTxs.reduce((sum, tx) => sum + parseFloat(tx.amount), 0),
-  total_expenses: expenseTxs.reduce((sum, tx) => sum + parseFloat(tx.amount), 0),
-  income_count: incomeTxs.length,
-  expense_count: expenseTxs.length,
-}
+    total_income: incomeTxs.reduce((sum, tx) => sum + Number.parseFloat(tx.amount), 0),
+    total_expenses: expenseTxs.reduce((sum, tx) => sum + Number.parseFloat(tx.amount), 0),
+    income_count: incomeTxs.length,
+    expense_count: expenseTxs.length,
+  }
 
-  // const balance = useMemo(() => {
-  //   return transactionSummary.total_income - transactionSummary.total_expenses
-  // }, [transactionSummary])
-
-
-  // Balance using signed_amount (already positive/negative)
-   const balance = state.transactions.reduce(
-     (sum, tx) => sum + parseFloat(tx.signed_amount),
-    0
-)
-
+  const balance = state.transactions.reduce((sum, tx) => sum + Number.parseFloat(tx.signed_amount), 0)
 
   // -----------------------------
   // Budget API Functions
@@ -249,33 +242,22 @@ export function FinanceProvider({ children }) {
     if (!currentUser) return
     try {
       const res = await budgetAPI.getBudgets()
-      const data = res.data.results || res.data 
+      const data = res.data.results || res.data
       dispatch({ type: "SET_BUDGETS", payload: data })
     } catch (error) {
       console.error("Error fetching budgets:", error)
-      dispatch({ type: "SET_BUDGETS", payload: []})
+      dispatch({ type: "SET_BUDGETS", payload: [] })
     }
   }, [currentUser])
 
-  const fetchCategories = useCallback(async () => {
-  if (!currentUser) return
-  try {
-    const res = await budgetAPI.getCategories()
-    dispatch({ type: "SET_CATEGORIES", payload: res.data.results || res.data })
-  } catch (error) {
-    console.error("Error fetching categories:", error)
-    dispatch({ type: "SET_CATEGORIES", payload: [] })
-  }
-}, [currentUser])
-
-
   const createBudget = useCallback(async (budgetData) => {
     try {
+      console.log("Submitting budget data:", budgetData)
       const res = await budgetAPI.createBudget(budgetData)
       dispatch({ type: "ADD_BUDGET", payload: res.data })
       return res.data
     } catch (error) {
-      console.error("Error creating budget:", error)
+      console.error("Error creating budget:", error.response?.data || error.message)
       throw error
     }
   }, [])
@@ -339,6 +321,28 @@ export function FinanceProvider({ children }) {
     }
   }, [])
 
+  const addFundsToGoal = useCallback(async (id, amount, description = "") => {
+    try {
+      const res = await savingsAPI.addFundsToGoal(id, { amount: Number(amount), description })
+      dispatch({ type: "UPDATE_SAVINGS_GOAL", payload: res.data.goal })
+      return res.data
+    } catch (error) {
+      console.error("Error adding funds:", error.response?.data || error.message)
+      throw error
+    }
+  }, [])
+
+  const withdrawFundsFromGoal = useCallback(async (id, amount, description = "") => {
+    try {
+      const res = await savingsAPI.withdrawFundsFromGoal(id, { amount, description })
+      dispatch({ type: "UPDATE_SAVINGS_GOAL", payload: res.data.goal })
+      return res.data
+    } catch (error) {
+      console.error("Error withdrawing funds:", error)
+      throw error
+    }
+  }, [])
+
   const updateSavingsGoal = useCallback(async (id, goalData) => {
     try {
       const res = await savingsAPI.updateSavingsGoal(id, goalData)
@@ -376,6 +380,10 @@ export function FinanceProvider({ children }) {
     }
   }, [currentUser])
 
+  const clearError = useCallback(() => {
+    dispatch({ type: "CLEAR_ERROR" })
+  }, [dispatch])
+
   // -----------------------------
   // Auto-load data on login
   // -----------------------------
@@ -383,7 +391,7 @@ export function FinanceProvider({ children }) {
     if (currentUser) {
       fetchTransactionsWithLoading()
       fetchBudgets()
-      fetchCategories()
+      fetchTransactionCategories()
       fetchSavingsAccount()
       fetchSavingsGoals()
       fetchSavingsAnalytics()
@@ -392,6 +400,7 @@ export function FinanceProvider({ children }) {
     currentUser,
     fetchTransactionsWithLoading,
     fetchBudgets,
+    fetchTransactionCategories,
     fetchSavingsAccount,
     fetchSavingsGoals,
     fetchSavingsAnalytics,
@@ -400,7 +409,6 @@ export function FinanceProvider({ children }) {
   // -----------------------------
   // Provider
   // -----------------------------
-
   return (
     <FinanceContext.Provider
       value={{
@@ -410,6 +418,7 @@ export function FinanceProvider({ children }) {
         // Derived values
         transactionSummary,
         balance,
+        expenseCategories,
 
         // Transactions
         fetchTransactions: fetchTransactionsWithLoading,
@@ -419,21 +428,25 @@ export function FinanceProvider({ children }) {
 
         // Budgets
         fetchBudgets,
-        fetchCategories,
         createBudget,
         updateBudget,
         deleteBudget,
+
+        // Transaction categories
+        fetchTransactionCategories,
 
         // Savings
         fetchSavingsAccount,
         fetchSavingsGoals,
         createSavingsGoal,
+        addFundsToGoal,
+        withdrawFundsFromGoal,
         updateSavingsGoal,
         deleteSavingsGoal,
         fetchSavingsAnalytics,
 
         // Errors
-        clearError: () => dispatch({ type: "CLEAR_ERROR" }),
+        clearError,
       }}
     >
       {children}

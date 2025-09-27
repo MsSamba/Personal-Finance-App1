@@ -4,7 +4,6 @@ import axios from "axios"
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
 console.log("🔗 API Base URL:", API_BASE_URL)
 
-
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,7 +22,7 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 )
 
 // Response interceptor → refresh token if expired
@@ -38,10 +37,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refresh_token")
         if (refreshToken) {
-          const response = await axios.post(
-            `${API_BASE_URL}/auth/token/refresh/`,
-            { refresh: refreshToken }
-          )
+          const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, { refresh: refreshToken })
 
           const { access } = response.data
           localStorage.setItem("access_token", access)
@@ -61,7 +57,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  }
+  },
 )
 
 // API endpoints
@@ -98,11 +94,13 @@ export const transactionAPI = {
   updateTransaction: (id, transactionData) => api.patch(`/transactions/transactions/${id}/`, transactionData),
   deleteTransaction: (id) => api.delete(`/transactions/transactions/${id}/`),
 
+  // Categories
+  getCategories: (params = {}) => api.get("/transactions/categories/", { params }),
+  createDefaultCategories: () => api.post("/transactions/categories/create_defaults/"),
+
   // Transaction analytics
   getTransactionSummary: (params = {}) => api.get("/transactions/transactions/summary/", { params }),
   getRecentTransactions: (limit = 10) => api.get("/transactions/transactions/recent/", { params: { limit } }),
-
-  
 }
 
 // Budget API endpoints
@@ -114,10 +112,9 @@ export const budgetAPI = {
   updateBudget: (id, budgetData) => api.patch(`/budgets/budgets/${id}/`, budgetData),
   deleteBudget: (id) => api.delete(`/budgets/budgets/${id}/`),
 
-
-  // Categories
-  getCategories: (params = {}) => api.get("/budgets/categories/", { params }),
-  createDefaultCategories: () => api.post("/budgets/categories/create_defaults/"),
+  // // Categories
+  // getCategories: (params = {}) => api.get("/budgets/categories/", { params }),
+  // createDefaultCategories: () => api.post("/budgets/categories/create_defaults/"),
 
   // Budget actions
   resetBudgetSpent: (id) => api.post(`/budgets/budgets/${id}/reset_spent/`),
@@ -148,8 +145,8 @@ export const savingsAPI = {
 
   // Savings Goals CRUD
   getSavingsGoals: (params = {}) => api.get("/savings/goals/", { params }),
-  getSavingsGoal: (id) => api.get(`/savings/savings/goals/${id}/`),
-  createSavingsGoal: (goalData) => api.post("/savings/savings/goals/", goalData),
+  getSavingsGoal: (id) => api.get(`/savings/goals/${id}/`),
+  createSavingsGoal: (goalData) => api.post("/savings/goals/", goalData),
   updateSavingsGoal: (id, goalData) => api.patch(`/savings/goals/${id}/`, goalData),
   deleteSavingsGoal: (id) => api.delete(`/savings/goals/${id}/`),
 

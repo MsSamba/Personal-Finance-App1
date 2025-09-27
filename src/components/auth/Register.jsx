@@ -154,7 +154,7 @@ export function Register({ onToggleMode }) {
                       value={formData.first_name}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pl-12"
-                      placeholder="John"
+                      placeholder="Jane"
                       disabled={loading}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

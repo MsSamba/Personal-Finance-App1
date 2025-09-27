@@ -31,18 +31,94 @@ export function UserProfile() {
     }
   }
 
-  const getInitials = () => {
-    if (currentUser?.first_name && currentUser?.last_name) {
-      return `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
+  const getInitials = (size = "sm") => {
+    const firstName = currentUser?.first_name?.trim()
+    const lastName = currentUser?.last_name?.trim()
+    const username = currentUser?.username?.trim()
+    const email = currentUser?.email?.trim()
+
+    let initials = ""
+
+    // Try to get initials from first and last name
+    if (firstName && lastName) {
+      initials = `${firstName.charAt(0)}${lastName.charAt(0)}`
     }
-    return currentUser?.email?.charAt(0)?.toUpperCase() || "U"
+    // If only first name exists
+    else if (firstName) {
+      initials = firstName.charAt(0)
+    }
+    // If only last name exists
+    else if (lastName) {
+      initials = lastName.charAt(0)
+    }
+    // Fallback to username
+    else if (username) {
+      initials = username.charAt(0)
+    }
+    // Fallback to email
+    else if (email) {
+      initials = email.charAt(0)
+    }
+    // Final fallback
+    else {
+      initials = "U"
+    }
+
+    // Always uppercase and return with responsive sizing
+    const uppercaseInitials = initials.toUpperCase()
+
+    // Auto-adjust size for responsive UIs
+    const sizeClasses = {
+      xs: "text-xs",
+      sm: "text-sm",
+      md: "text-base",
+      lg: "text-lg",
+      xl: "text-xl",
+    }
+
+    return {
+      initials: uppercaseInitials,
+      className: sizeClasses[size] || sizeClasses.sm,
+    }
   }
 
   const getDisplayName = () => {
-    if (currentUser?.first_name && currentUser?.last_name) {
-      return `${currentUser.first_name} ${currentUser.last_name}`
+    const firstName = currentUser?.first_name?.trim()
+    const lastName = currentUser?.last_name?.trim()
+    const username = currentUser?.username?.trim()
+
+    // Try full name first
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`
     }
-    return currentUser?.username || "User"
+    // If only first name exists, show "FirstName"
+    else if (firstName) {
+      return firstName
+    }
+    // If only last name exists, show "LastName"
+    else if (lastName) {
+      return lastName
+    }
+    // Fallback to username or default
+    else if (username) {
+      return username
+    } else {
+      return "User"
+    }
+  }
+
+  const getDisplayUsername = () => {
+    const username = currentUser?.username?.trim()
+    const email = currentUser?.email?.trim()
+
+    // Show username if available, otherwise fallback to email
+    if (username) {
+      return `@${username}`
+    } else if (email) {
+      return email
+    } else {
+      return "username"
+    }
   }
 
   if (loading) {
@@ -55,6 +131,9 @@ export function UserProfile() {
       </div>
     )
   }
+
+  const { initials: smallInitials, className: smallInitialsClass } = getInitials("sm")
+  const { initials: mediumInitials, className: mediumInitialsClass } = getInitials("md")
 
   return (
     <div className="relative user-profile-dropdown">
@@ -70,12 +149,12 @@ export function UserProfile() {
               className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
-            <span className="text-white text-sm font-medium">{getInitials()}</span>
+            <span className={`text-white font-medium ${smallInitialsClass}`}>{smallInitials}</span>
           )}
         </div>
         <div className="text-left hidden lg:block flex-1 min-w-0">
           <p className="text-sm font-medium text-white truncate">{getDisplayName()}</p>
-          <p className="text-xs text-gray-300 truncate">{currentUser?.email}</p>
+          <p className="text-xs text-gray-300 truncate">{getDisplayUsername()}</p>
         </div>
         <div className="hidden lg:block">
           <svg
@@ -101,12 +180,12 @@ export function UserProfile() {
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-medium">{getInitials()}</span>
+                  <span className={`text-white font-medium ${mediumInitialsClass}`}>{mediumInitials}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 truncate">{getDisplayName()}</p>
-                <p className="text-sm text-gray-500 truncate">{currentUser?.email}</p>
+                <p className="text-sm text-gray-500 truncate">{getDisplayUsername()}</p>
                 {currentUser?.is_verified ? (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                     ✓ Verified

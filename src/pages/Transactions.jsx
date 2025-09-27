@@ -15,6 +15,8 @@ export function Transactions() {
     updateTransaction,
     deleteTransaction,
     clearError,
+    budgets, 
+    budgetCategories, 
   } = useFinance()
 
   const [showForm, setShowForm] = useState(false)
@@ -23,10 +25,17 @@ export function Transactions() {
     amount: "",
     description: "",
     type: "expense",
+    category: "",
   })
   const [formLoading, setFormLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
+  const categoriesWithBudgets =
+    budgetCategories?.filter((category) =>
+      budgets?.some((budget) => budget.category === category.id && budget.status === "active"),
+    ) || []
+
+  // Fetch transactions on mount + search
   useEffect(() => {
     if (searchTerm.trim()) {
       const timeoutId = setTimeout(() => {
@@ -48,6 +57,7 @@ export function Transactions() {
         description: formData.description,
         type: formData.type,
         date: new Date().toISOString().split("T")[0],
+        ...(formData.type === "expense" && { category: formData.category }),
       }
 
       if (editingTransaction) {
@@ -57,7 +67,7 @@ export function Transactions() {
         await createTransaction(transactionData)
       }
 
-      setFormData({ amount: "", description: "", type: "expense" })
+      setFormData({ amount: "", description: "", type: "expense", category: "" })
       setShowForm(false)
     } catch (error) {
       console.error("Transaction operation failed:", error)
@@ -72,6 +82,7 @@ export function Transactions() {
       amount: Math.abs(Number.parseFloat(transaction.amount)).toString(),
       description: transaction.description,
       type: transaction.type,
+      category: transaction.category || "",
     })
     setShowForm(true)
   }
@@ -89,8 +100,16 @@ export function Transactions() {
   const handleCancel = () => {
     setShowForm(false)
     setEditingTransaction(null)
-    setFormData({ amount: "", description: "", type: "expense" })
+    setFormData({ amount: "", description: "", type: "expense", category: "" })
     clearError()
+  }
+
+  const handleTypeChange = (newType) => {
+    setFormData({
+      ...formData,
+      type: newType,
+      category: newType === "income" ? "" : formData.category,
+    })
   }
 
   if (transactionsLoading && transactions.length === 0) {
@@ -112,7 +131,7 @@ export function Transactions() {
         <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
         <button
           onClick={() => {
-            setFormData({ amount: "", description: "", type: "expense" })
+            setFormData({ amount: "", description: "", type: "expense", category: "" })
             setShowForm(true)
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors"
@@ -160,7 +179,7 @@ export function Transactions() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => handleTypeChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={formLoading}
               >
@@ -168,7 +187,36 @@ export function Transactions() {
                 <option value="income">💰 Income</option>
               </select>
             </div>
-            <div>
+
+            {formData.type === "expense" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                {categoriesWithBudgets.length > 0 ? (
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    disabled={formLoading}
+                  >
+                    <option value="">Select a category</option>
+                    {categoriesWithBudgets.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.icon} {category.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-sm text-yellow-800">
+                      No budget categories available. Please create a budget first to track expenses.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className={formData.type === "income" ? "md:col-start-2" : ""}>
               <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -186,7 +234,8 @@ export function Transactions() {
                 />
               </div>
             </div>
-            <div>
+
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <input
                 type="text"
@@ -198,10 +247,11 @@ export function Transactions() {
                 disabled={formLoading}
               />
             </div>
+
             <div className="md:col-span-2 flex gap-2">
               <button
                 type="submit"
-                disabled={formLoading}
+                disabled={formLoading || (formData.type === "expense" && !formData.category)}
                 className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {formLoading ? (
@@ -238,6 +288,9 @@ export function Transactions() {
                     Description
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -253,6 +306,9 @@ export function Transactions() {
                   <tr key={transaction.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {transaction.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {transaction.type === "expense" ? transaction.category || "N/A" : "Income"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(transaction.date).toLocaleDateString()}
@@ -301,7 +357,7 @@ export function Transactions() {
             description="Start your financial journey by adding your first transaction."
             actionText="Add Your First Transaction"
             onAction={() => {
-              setFormData({ amount: "", description: "", type: "expense" })
+              setFormData({ amount: "", description: "", type: "expense", category: "" })
               setShowForm(true)
             }}
           />
@@ -310,3 +366,4 @@ export function Transactions() {
     </div>
   )
 }
+

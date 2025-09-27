@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
         if (token && userData) {
           const user = JSON.parse(userData)
           setCurrentUser(user)
+          console.log("Initial currentUser from localStorage:", user)
 
           // Fetch fresh user data and profile
           await fetchUserData()
@@ -113,7 +114,6 @@ export function AuthProvider({ children }) {
         // Authenticate
         const response = await authAPI.login(credentials)
         const { user, tokens } = response.data
-        
 
         // Store tokens and user data
         localStorage.setItem("access_token", tokens.access)

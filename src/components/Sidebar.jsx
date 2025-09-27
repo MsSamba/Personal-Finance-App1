@@ -20,6 +20,91 @@ export function Sidebar({ isOpen, onClose }) {
     setIsCollapsed(!isCollapsed)
   }
 
+  const getInitials = () => {
+    const firstName = currentUser?.first_name?.trim()
+    const lastName = currentUser?.last_name?.trim()
+    const displayName = currentUser?.displayName?.trim()
+    const username = currentUser?.username?.trim()
+    const email = currentUser?.email?.trim()
+
+    let initials = ""
+
+    // Try to get initials from first and last name
+    if (firstName && lastName) {
+      initials = `${firstName.charAt(0)}${lastName.charAt(0)}`
+    }
+    // If only first name exists
+    else if (firstName) {
+      initials = firstName.charAt(0)
+    }
+    // If only last name exists
+    else if (lastName) {
+      initials = lastName.charAt(0)
+    }
+    // Try displayName if available
+    else if (displayName) {
+      initials = displayName.charAt(0)
+    }
+    // Fallback to username
+    else if (username) {
+      initials = username.charAt(0)
+    }
+    // Fallback to email
+    else if (email) {
+      initials = email.charAt(0)
+    }
+    // Final fallback
+    else {
+      initials = "U"
+    }
+
+    // Always uppercase
+    return initials.toUpperCase()
+  }
+
+  const getDisplayName = () => {
+    const firstName = currentUser?.first_name?.trim()
+    const lastName = currentUser?.last_name?.trim()
+    const displayName = currentUser?.displayName?.trim()
+    const username = currentUser?.username?.trim()
+
+    // Try full name first
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`
+    }
+    // If only first name exists
+    else if (firstName) {
+      return firstName
+    }
+    // If only last name exists
+    else if (lastName) {
+      return lastName
+    }
+    // Try displayName if available
+    else if (displayName) {
+      return displayName
+    }
+    // Fallback to username or default
+    else if (username) {
+      return username
+    } else {
+      return "User"
+    }
+  }
+
+  const getDisplayUsername = () => {
+    const username = currentUser?.username?.trim()
+    const email = currentUser?.email?.trim()
+
+    if (username) {
+      return `@${username}`
+    } else if (email) {
+      return email
+    } else {
+      return "username"
+    }
+  }
+
   return (
     <>
       {/* Mobile overlay */}
@@ -86,14 +171,9 @@ export function Sidebar({ isOpen, onClose }) {
         <div className={`p-4 border-t border-gray-700 ${isCollapsed ? "px-2" : ""}`}>
           {isCollapsed ? (
             <div>
-              <div
-                className="flex items-center justify-center mb-2"
-                title={currentUser?.displayName || currentUser?.email || "User"}
-              >
+              <div className="flex items-center justify-center mb-2" title={getDisplayName()}>
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer">
-                  <span className="text-white text-sm font-medium">
-                    {currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || "U"}
-                  </span>
+                  <span className="text-white text-sm font-medium">{getInitials()}</span>
                 </div>
               </div>
 
@@ -110,13 +190,11 @@ export function Sidebar({ isOpen, onClose }) {
             <>
               <div className="flex items-center space-x-3 mb-3">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || "U"}
-                  </span>
+                  <span className="text-white text-sm font-medium">{getInitials()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{currentUser?.displayName || "User"}</p>
-                  <p className="text-xs text-gray-300 truncate">{currentUser?.email}</p>
+                  <p className="text-sm font-medium text-white truncate">{getDisplayName()}</p>
+                  <p className="text-xs text-gray-300 truncate">{getDisplayUsername()}</p>
                 </div>
               </div>
               <button
