@@ -103,7 +103,7 @@ export function Budgets() {
       sms_alerts: formData.sms_alerts,
     }
 
-    // 👇 Add this line to debug the payload
+    //debug the payload
     console.log("Submitting Budget Payload:", payload)
 
     try {

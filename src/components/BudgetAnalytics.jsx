@@ -3,6 +3,30 @@
 import { useState, useEffect } from "react"
 import { useFinance } from "../context/FinanceContext"
 import { formatCurrency } from "../utils/currency"
+import { Doughnut, Bar, Line } from "react-chartjs-2"
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+} from "chart.js"
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement
+)
+
 
 export function BudgetAnalytics() {
   const { budgetAnalytics, budgetAnalyticsLoading, fetchBudgetAnalytics } = useFinance()
@@ -145,6 +169,102 @@ export function BudgetAnalytics() {
         </div>
       </div>
 
+      {/* Category Breakdown Chart */}
+{category_performance && category_performance.length > 0 && (
+  <div className="bg-white p-6 rounded-xl shadow-sm border">
+    <h4 className="text-lg font-semibold mb-4">Category Breakdown</h4>
+    <Doughnut
+      data={{
+        labels: category_performance.map((c) => c.category),
+        datasets: [
+          {
+            label: "Spent",
+            data: category_performance.map((c) => c.spent),
+            backgroundColor: category_performance.map((c) =>
+              c.status === "exceeded"
+                ? "#EF4444" // red
+                : c.status === "at_risk"
+                ? "#F59E0B" // yellow
+                : "#10B981" // green
+            ),
+            borderWidth: 1,
+          },
+        ],
+      }}
+      options={{
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" },
+        },
+      }}
+    />
+  </div>
+)}
+
+
+{/* Period Comparison Chart */}
+{period_comparison && period_comparison.length > 0 && (
+  <div className="bg-white p-6 rounded-xl shadow-sm border">
+    <h4 className="text-lg font-semibold mb-4">Period Comparison</h4>
+    <Bar
+      data={{
+        labels: period_comparison.map((p) => p.period),
+        datasets: [
+          {
+            label: "Spent",
+            data: period_comparison.map((p) => p.total_spent),
+            backgroundColor: "#3B82F6",
+          },
+          {
+            label: "Limit",
+            data: period_comparison.map((p) => p.total_limit),
+            backgroundColor: "#9CA3AF",
+          },
+        ],
+      }}
+      options={{
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" },
+        },
+      }}
+    />
+  </div>
+)}
+
+
+{/* Performance Trend */}
+{period_comparison && period_comparison.length > 0 && (
+  <div className="bg-white p-6 rounded-xl shadow-sm border">
+    <h4 className="text-lg font-semibold mb-4">Performance Trend</h4>
+    <Line
+      data={{
+        labels: period_comparison.map((p) => p.period),
+        datasets: [
+          {
+            label: "Performance Score",
+            data: period_comparison.map((p) => p.performance_score),
+            borderColor: "#10B981",
+            backgroundColor: "rgba(16,185,129,0.2)",
+            fill: true,
+            tension: 0.3,
+          },
+        ],
+      }}
+      options={{
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" },
+        },
+        scales: {
+          y: { min: 0, max: 100 },
+        },
+      }}
+    />
+  </div>
+)}
+
+
       {/* Category Performance */}
       {category_performance && category_performance.length > 0 && (
         <div className="bg-white p-6 rounded-xl shadow-sm border">
@@ -197,7 +317,7 @@ export function BudgetAnalytics() {
         </div>
       )}
 
-      {/* Period Comparison */}
+      Period Comparison
       {period_comparison && period_comparison.length > 0 && (
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <h4 className="text-lg font-semibold mb-4">Period Comparison</h4>

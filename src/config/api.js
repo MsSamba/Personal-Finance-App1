@@ -121,7 +121,8 @@ export const budgetAPI = {
   checkAlerts: () => api.post("/budgets/budgets/check_alerts/"),
 
   // Budget analytics
-  getBudgetAnalytics: (params = {}) => api.get("/budgets/budgets/analytics/", { params }),
+  // getBudgetAnalytics: (params = {}) => api.get("/budgets/budgets/analytics/", { params }),
+  getBudgetAnalytics: (period = "current") => api.get(`/budgets/analytics/?period=${period}`),
   getBudgetSummary: (params = {}) => api.get("/budgets/budgets/summary/", { params }),
 
   // Budget history and alerts
@@ -171,4 +172,25 @@ export const savingsAPI = {
   getSavingsReports: (params = {}) => api.get("/savings/reports/", { params }),
   generateSavingsReport: (reportData) => api.post("/savings/reports/generate_report/", reportData),
 }
+
+// Recurring Bills API endpoints
+export const recurringBillsAPI = {
+  // Bills CRUD
+  getBills: (params = {}) => api.get("/recurring-bills/bills/", { params }),
+  getBill: (id) => api.get(`/recurring-bills/bills/${id}/`),
+  createBill: (billData) => api.post("/recurring-bills/bills/", billData),
+  updateBill: (id, billData) => api.patch(`/recurring-bills/bills/${id}/`, billData),
+  deleteBill: (id) => api.delete(`/recurring-bills/bills/${id}/`),
+
+  // Bill actions
+  togglePaid: (id) => api.post(`/recurring-bills/bills/${id}/toggle_paid/`),
+
+  // Bulk operations
+  bulkOperations: (operationData) => api.post("/recurring-bills/bills/bulk_operations/", operationData),
+
+  // Statistics
+  getStats: (params = {}) => api.get("/recurring-bills/bills/stats/", { params }),
+}
+
+
 export default api
