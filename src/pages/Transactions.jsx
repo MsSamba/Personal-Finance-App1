@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useFinance } from "../context/FinanceContext"
 import { EmptyState } from "../components/EmptyState"
 import { formatCurrencyWithSign, CURRENCY_SYMBOL } from "../utils/currency"
+import { toast } from "sonner"
 
 export function Transactions() {
   const {
@@ -15,8 +16,8 @@ export function Transactions() {
     updateTransaction,
     deleteTransaction,
     clearError,
-    budgets, 
-    budgetCategories, 
+    budgets,
+    budgetCategories,
   } = useFinance()
 
   const [showForm, setShowForm] = useState(false)
@@ -63,14 +64,59 @@ export function Transactions() {
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, transactionData)
         setEditingTransaction(null)
+        toast.success("Transaction updated successfully", {
+          duration: 3000,
+          position: "top-center",
+          style: {
+            background: "var(--success)",
+            border: "1px solid var(--success)",
+            color: "var(--success-foreground)",
+            borderRadius: "0.75rem",
+            padding: "1rem",
+            fontSize: "0.875rem",
+            fontWeight: "500",
+            boxShadow: "0 10px 15px -3px rgba(34, 197, 94, 0.2), 0 4px 6px -2px rgba(34, 197, 94, 0.1)",
+            backdropFilter: "blur(8px)",
+          },
+        })
       } else {
         await createTransaction(transactionData)
+        toast.success("Transaction added successfully", {
+          duration: 3000,
+          position: "top-center",
+          style: {
+            background: "var(--success)",
+            border: "1px solid var(--success)",
+            color: "var(--success-foreground)",
+            borderRadius: "0.75rem",
+            padding: "1rem",
+            fontSize: "0.875rem",
+            fontWeight: "500",
+            boxShadow: "0 10px 15px -3px rgba(34, 197, 94, 0.2), 0 4px 6px -2px rgba(34, 197, 94, 0.1)",
+            backdropFilter: "blur(8px)",
+          },
+        })
       }
 
       setFormData({ amount: "", description: "", type: "expense", category: "" })
       setShowForm(false)
     } catch (error) {
       console.error("Transaction operation failed:", error)
+      toast.error("Failed to save transaction", {
+        duration: 4000,
+        position: "top-center",
+        style: {
+          background: "var(--destructive)",
+          border: "1px solid var(--destructive)",
+          color: "var(--destructive-foreground)",
+          borderRadius: "0.75rem",
+          padding: "1rem",
+          fontSize: "0.875rem",
+          fontWeight: "500",
+          boxShadow: "0 10px 15px -3px rgba(239, 68, 68, 0.2), 0 4px 6px -2px rgba(239, 68, 68, 0.1)",
+          backdropFilter: "blur(8px)",
+        },
+      })
     } finally {
       setFormLoading(false)
     }
@@ -87,14 +133,96 @@ export function Transactions() {
     setShowForm(true)
   }
 
-  const handleDelete = async (transactionId) => {
-    if (window.confirm("Are you sure you want to delete this transaction?")) {
-      try {
-        await deleteTransaction(transactionId)
-      } catch (error) {
-        console.error("Delete failed:", error)
-      }
-    }
+  const handleDelete = (transactionId) => {
+    toast(
+      <div className="w-full max-w-sm mx-auto">
+        <div className="bg-red-500 text-white px-5 py-4 rounded-t-lg flex justify-between items-center -mx-6 -mt-6 mb-5">
+          <h3 className="font-semibold text-lg">Confirm Deletion</h3>
+          <button
+            onClick={() => toast.dismiss()}
+            className="text-white hover:text-red-100 transition-colors p-1 hover:bg-red-600 rounded"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="text-gray-700 text-sm leading-relaxed mb-8 px-1">
+          Are you sure you want to delete this item? This action cannot be undone.
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            onClick={() => toast.dismiss()}
+            className="bg-gray-500 text-white px-5 py-2.5 rounded-md hover:bg-gray-600 transition-colors duration-200 font-medium text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await deleteTransaction(transactionId)
+                toast.dismiss()
+                toast.success("Transaction deleted successfully", {
+                  duration: 3000,
+                  position: "top-center",
+                  style: {
+                    background: "var(--success)",
+                    border: "1px solid var(--success)",
+                    color: "var(--success-foreground)",
+                    borderRadius: "0.75rem",
+                    padding: "1rem",
+                    fontSize: "0.875rem",
+                    fontWeight: "500",
+                    boxShadow: "0 10px 15px -3px rgba(34, 197, 94, 0.2), 0 4px 6px -2px rgba(34, 197, 94, 0.1)",
+                    backdropFilter: "blur(8px)",
+                  },
+                })
+              } catch (error) {
+                console.error("Delete failed:", error)
+                toast.dismiss()
+                toast.error("Failed to delete transaction", {
+                  duration: 4000,
+                  position: "top-center",
+                  style: {
+                    background: "var(--destructive)",
+                    border: "1px solid var(--destructive)",
+                    color: "var(--destructive-foreground)",
+                    borderRadius: "0.75rem",
+                    padding: "1rem",
+                    fontSize: "0.875rem",
+                    fontWeight: "500",
+                    boxShadow: "0 10px 15px -3px rgba(239, 68, 68, 0.2), 0 4px 6px -2px rgba(239, 68, 68, 0.1)",
+                    backdropFilter: "blur(8px)",
+                  },
+                })
+              }
+            }}
+            className="bg-red-500 text-white px-5 py-2.5 rounded-md hover:bg-red-600 transition-colors duration-200 font-medium text-sm"
+          >
+            Delete
+          </button>
+        </div>
+      </div>,
+      {
+        duration: 15000,
+        position: "top-center",
+        style: {
+          background: "white",
+          border: "1px solid #d1d5db",
+          borderRadius: "0.75rem",
+          padding: "1.5rem",
+          fontSize: "0.875rem",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+          maxWidth: "420px",
+          width: "100%",
+          margin: "0 auto",
+          marginTop: "20vh",
+          zIndex: 9999,
+        },
+      },
+    )
   }
 
   const handleCancel = () => {
@@ -366,4 +494,5 @@ export function Transactions() {
     </div>
   )
 }
+
 

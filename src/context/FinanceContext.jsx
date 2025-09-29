@@ -515,6 +515,7 @@ const initialState = {
   transactionCategories: [],
   pots: [],
   recurringBills: [],
+  recurringBillStats: null,
 
   // Savings
   savingsAccount: null,
@@ -624,6 +625,10 @@ function financeReducer(state, action) {
         ...state,
         recurringBills: (state.recurringBills || []).map((bill) => ({ ...bill, paid: false })),
       }
+
+    case "SET_RECURRING_BILL_STATS":
+      return { ...state, recurringBillStats: action.payload }
+  
 
     // Savings
     case "SET_SAVINGS_ACCOUNT":
@@ -961,18 +966,31 @@ export function FinanceProvider({ children }) {
   // Recurring Bills API Functions
   // -----------------------------
   const fetchRecurringBills = useCallback(async () => {
-    if (!currentUser) return
-    try {
-      dispatch({ type: "SET_LOADING", payload: true })
-      const res = await recurringBillsAPI.getBills()
-      dispatch({ type: "SET_RECURRING_BILLS", payload: res.data.results || res.data })
-    } catch (error) {
-      console.error("Error fetching recurring bills:", error)
-      dispatch({ type: "SET_ERROR", payload: "Failed to load recurring bills" })
-    } finally {
-      dispatch({ type: "SET_LOADING", payload: false })
+  if (!currentUser) return
+  try {
+
+    dispatch({ type: "SET_LOADING", payload: true })
+    const res = await recurringBillsAPI.getBills()
+    console.log("📦 Recurring bills response:", res.data)
+
+    // Handle both parts from backend
+    const bills = Array.isArray(res.data.results?.results)
+      ? res.data.results.results
+      : []
+    const stats = res.data.stats || null
+
+    dispatch({ type: "SET_RECURRING_BILLS", payload: bills })
+    if (stats) {
+      dispatch({ type: "SET_RECURRING_BILL_STATS", payload: stats })
     }
-  }, [currentUser])
+  } catch (error) {
+    console.error("Error fetching recurring bills:", error)
+    dispatch({ type: "SET_ERROR", payload: "Failed to load recurring bills" })
+  } finally {
+    dispatch({ type: "SET_LOADING", payload: false })
+  }
+}, [currentUser])
+
 
   const createRecurringBill = useCallback(async (billData) => {
     try {
@@ -1021,29 +1039,29 @@ export function FinanceProvider({ children }) {
     }
   }, [])
 
-  const markAllBillsPaid = useCallback(async () => {
-    try {
-      const res = await recurringBillsAPI.bulkOperations({ operation: "mark_all_paid" })
-      dispatch({ type: "SET_RECURRING_BILLS", payload: res.data.bills })
-      return res.data
-    } catch (error) {
-      console.error("Error marking all bills paid:", error)
-      dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || "Failed to mark all bills paid" })
-      throw error
-    }
-  }, [])
 
-  const resetAllBills = useCallback(async () => {
-    try {
-      const res = await recurringBillsAPI.bulkOperations({ operation: "reset_all" })
-      dispatch({ type: "SET_RECURRING_BILLS", payload: res.data.bills })
-      return res.data
-    } catch (error) {
-      console.error("Error resetting all bills:", error)
-      dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || "Failed to reset all bills" })
-      throw error
-    }
-  }, [])
+  const markAllBillsPaid = useCallback(async () => {
+  try {
+    await recurringBillsAPI.bulkOperations({ action: "mark_all_paid" }) 
+    await fetchRecurringBills() 
+  } catch (error) {
+    console.error("Error marking all bills paid:", error)
+    dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || "Failed to mark all bills paid" })
+    throw error
+  }
+}, [fetchRecurringBills])
+
+const resetAllBills = useCallback(async () => {
+  try {
+    await recurringBillsAPI.bulkOperations({ action: "reset_all" })
+    await fetchRecurringBills()
+  } catch (error) {
+    console.error("Error resetting all bills:", error)
+    dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || "Failed to reset all bills" })
+    throw error
+  }
+}, [fetchRecurringBills])
+
 
   // -----------------------------
   // Auto-load data on login
