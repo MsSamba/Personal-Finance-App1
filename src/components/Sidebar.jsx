@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { NavLink } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { Link } from "react-router-dom";
+
 
 const navigation = [
   { name: "Overview", href: "/", icon: "🏠" },
@@ -115,6 +117,9 @@ export function Sidebar({ isOpen, onClose }) {
       )}
 
       {/* Sidebar */}
+      <div className="space-y-6">
+
+      </div>
       <div
         className={`
         fixed inset-y-0 left-0 z-50 bg-gray-900 transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col
@@ -167,45 +172,38 @@ export function Sidebar({ isOpen, onClose }) {
           </ul>
         </nav>
 
-        {/* User Profile at bottom */}
-        <div className={`p-4 border-t border-gray-700 ${isCollapsed ? "px-2" : ""}`}>
-          {isCollapsed ? (
-            <div>
-              <div className="flex items-center justify-center mb-2" title={getDisplayName()}>
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer">
-                  <span className="text-white text-sm font-medium">{getInitials()}</span>
-                </div>
-              </div>
+       {/* User Profile at bottom */}
+<div className={`p-4 border-t border-gray-700 ${isCollapsed ? "px-2" : ""}`}>
+  <Link
+    to="/profile"
+    onClick={() => onClose()}
+    className="flex items-center space-x-3 mb-3 group"
+  >
+    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+      <span className="text-white text-sm font-medium">{getInitials()}</span>
+    </div>
 
-              {/* Collapsed sign out button */}
-              <button
-                onClick={logout}
-                className="w-full bg-red-600 text-white p-2 rounded-lg text-xs hover:bg-red-700 transition-colors flex items-center justify-center"
-                title="Sign Out"
-              >
-                🚪
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">{getInitials()}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{getDisplayName()}</p>
-                  <p className="text-xs text-gray-300 truncate">{getDisplayUsername()}</p>
-                </div>
-              </div>
-              <button
-                onClick={logout}
-                className="w-full bg-red-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
-            </>
-          )}
-        </div>
+    {!isCollapsed && (
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-white group-hover:text-blue-400 truncate">
+          {getDisplayName()}
+        </p>
+        <p className="text-xs text-gray-300 truncate">{getDisplayUsername()}</p>
+      </div>
+    )}
+  </Link>
+
+  {/* Optional sign-out button below */}
+  {/* {!isCollapsed && (
+    <button
+      onClick={logout}
+      className="w-full bg-red-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
+    >
+      Sign Out
+    </button>
+  )} */}
+</div>
+
       </div>
     </>
   )

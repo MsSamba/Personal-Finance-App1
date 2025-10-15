@@ -133,7 +133,7 @@ export function Transactions() {
     setShowForm(true)
   }
 
-  const handleDelete = (transactionId) => {
+  const c = (transactionId) => {
     toast(
       <div className="w-full max-w-sm mx-auto">
         <div className="bg-red-500 text-white px-5 py-4 rounded-t-lg flex justify-between items-center -mx-6 -mt-6 mb-5">
